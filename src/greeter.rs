@@ -958,9 +958,7 @@ impl Greeter {
       self.session_source = SessionSource::DefaultCommand(cmd.clone(), None);
     }
 
-    if !self.config().opt_present("sessions")
-      && !config.session.sessions_dirs.is_empty()
-    {
+    if !self.config().opt_present("sessions") {
       self
         .session_paths
         .extend(config.session.sessions_dirs.iter().map(|dir| {
@@ -971,9 +969,7 @@ impl Greeter {
         }));
     }
 
-    if !self.config().opt_present("xsessions")
-      && !config.session.xsessions_dirs.is_empty()
-    {
+    if !self.config().opt_present("xsessions") {
       self
         .session_paths
         .extend(config.session.xsessions_dirs.iter().map(|dir| {
