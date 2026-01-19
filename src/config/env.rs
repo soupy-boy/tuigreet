@@ -52,6 +52,17 @@ pub fn apply_env_vars(config: &mut Config) {
     config.display.greeting = Some(value);
   }
 
+  if let Ok(value) = env::var("TUIGREET_TITLE") {
+    if let Ok(show_title) = parse_bool(&value) {
+      config.display.show_title = show_title;
+    } else {
+      tracing::warn!(
+        "Invalid TUIGREET_TITLE: '{}', expected true/false",
+        value
+      );
+    }
+  }
+
   if let Ok(value) = env::var("TUIGREET_ISSUE") {
     if let Ok(issue) = parse_bool(&value) {
       config.display.issue = issue;

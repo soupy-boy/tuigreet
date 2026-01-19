@@ -111,6 +111,10 @@ pub struct DisplayConfig {
   #[serde(default)]
   pub greeting: Option<String>,
 
+  /// Show login form title
+  #[serde(default = "default_show_title")]
+  pub show_title: bool,
+
   /// Show /etc/issue file
   #[serde(default)]
   pub issue: bool,
@@ -353,6 +357,10 @@ pub enum WidgetPosition {
 }
 
 // Default value functions
+fn default_show_title() -> bool {
+  true
+}
+
 fn default_log_file() -> String {
   "/tmp/tuigreet.log".to_string()
 }
