@@ -126,6 +126,8 @@ pub struct Greeter {
   pub time_format: Option<String>,
   // Greeting message (MOTD) to use to welcome the user.
   pub greeting:    Option<String>,
+  // Container's title configuration
+  pub title:       TitleOption,
   // Transaction message to show to the user.
   pub message:     Option<String>,
 
@@ -182,6 +184,7 @@ impl Default for Greeter {
       time:                  false,
       time_format:           None,
       greeting:              None,
+      title:                 Default::default(),
       message:               None,
       powers:                Menu::default(),
       power_setsid:          false,
@@ -595,6 +598,7 @@ impl Greeter {
       "show custom text above login prompt",
       "GREETING",
     );
+    opts.optflag("", "title", "show the container's title");
     opts.optflag("t", "time", "display the current date and time");
     opts.optopt(
       "",
@@ -780,6 +784,8 @@ impl Greeter {
 
       self.time_format = Some(format);
     }
+
+    self.title.enable = self.config().opt_present("title");
 
     if self.config().opt_present("user-menu") {
       self.user_menu = true;
@@ -1006,6 +1012,10 @@ impl Greeter {
       self.greeting = config.display.greeting.clone();
     }
 
+    if !self.config().opt_present("title") {
+      self.title.enable = config.display.show_title;
+    }
+
     if !self.config().opt_present("issue") {
       // XXX: issue handling is done in parse_options, so we need to set
       // greeting from issue there
@@ -1118,6 +1128,18 @@ impl Greeter {
 
     // Apply CLI theme override if present
     self.theme = apply_cli_theme(config_theme, cli_theme);
+  }
+}
+
+// Parsed title option
+pub struct TitleOption {
+  // Display the container's title
+  pub enable: bool,
+}
+
+impl Default for TitleOption {
+  fn default() -> Self {
+    Self { enable: true }
   }
 }
 

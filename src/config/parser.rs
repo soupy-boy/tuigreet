@@ -182,6 +182,9 @@ pub fn merge_configs(dest: &mut Config, src: Config) {
   if src.display.greeting != defaults.display.greeting {
     dest.display.greeting = src.display.greeting;
   }
+  if src.display.show_title != defaults.display.show_title {
+    dest.display.show_title = src.display.show_title;
+  }
   if src.display.issue != defaults.display.issue {
     dest.display.issue = src.display.issue;
   }

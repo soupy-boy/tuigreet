@@ -41,6 +41,9 @@ show_time = false
 # Custom greeting message
 # greeting = "Welcome to the system"
 
+# Show login form title
+show_title = false
+
 # Show /etc/issue file (mutually exclusive with greeting)
 issue = false
 

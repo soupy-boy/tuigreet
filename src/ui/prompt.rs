@@ -45,17 +45,20 @@ pub fn draw_with_area(
     height - (2 * container_padding),
   );
 
-  let hostname = Span::from(titleize(&fl!(
-    "title_authenticate",
-    hostname = get_hostname()
-  )));
-  let block = Block::default()
-    .title(hostname)
+  let mut block = Block::default()
     .title_style(theme.of(&[Themed::Title]))
     .style(theme.of(&[Themed::Container]))
     .borders(Borders::ALL)
     .border_type(BorderType::Plain)
     .border_style(theme.of(&[Themed::Border]));
+
+  if greeter.title.enable {
+    let hostname = Span::from(titleize(&fl!(
+      "title_authenticate",
+      hostname = get_hostname()
+    )));
+    block = block.title(hostname);
+  }
 
   f.render_widget(block, container);
 
