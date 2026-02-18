@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use rand::{Rng, SeedableRng, prelude::StdRng};
+use rand::{RngExt, SeedableRng, prelude::StdRng};
 use tui::{
   layout::{Alignment, Constraint, Direction, Layout, Rect},
   text::Span,
