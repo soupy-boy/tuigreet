@@ -314,13 +314,6 @@ impl Config {
       ));
     }
 
-    if self.remember.session && self.remember.user_session {
-      return Err(ConfigError::MutuallyExclusive(
-        "remember.session".to_string(),
-        "remember.user_session".to_string(),
-      ));
-    }
-
     // Check dependencies
     if self.remember.user_session && !self.remember.username {
       return Err(ConfigError::Dependency(
@@ -579,11 +572,23 @@ user_session = true
     assert!(config.remember.session);
     assert!(config.remember.user_session);
 
+    // Both flags being set is now a warning, not a hard error, so that the
+    // rest of the config is still applied. user_session takes behavioral
+    // precedence when both are true.
     let result = config.validate(false);
     assert!(
-      result.is_err(),
-      "Expected validation to fail when both remember.session and \
-       remember.user_session are true"
+      result.is_ok(),
+      "Both remember.session and remember.user_session being true should \
+       produce a warning, not an error"
+    );
+
+    let warnings = result.unwrap();
+    assert!(
+      warnings.iter().any(|w| {
+        w.contains("remember.session") && w.contains("remember.user_session")
+      }),
+      "Expected a warning about conflicting remember options, got: {:?}",
+      warnings
     );
   }
 
@@ -600,18 +605,12 @@ user_session = true
       toml::from_str(toml_content).expect("Failed to parse TOML");
     let validation_result = config.validate(false);
 
-    match validation_result {
-      Err(ConfigError::MutuallyExclusive(opt1, opt2)) => {
-        assert_eq!(opt1, "remember.session");
-        assert_eq!(opt2, "remember.user_session");
-      },
-      _ => {
-        panic!(
-          "Expected MutuallyExclusive error, got: {:?}",
-          validation_result
-        );
-      },
-    }
+    // Both flags being set is a warning, not a hard error.
+    assert!(
+      validation_result.is_ok(),
+      "Expected validation to succeed with a warning, got: {:?}",
+      validation_result
+    );
   }
 
   #[test]

@@ -228,6 +228,10 @@ impl Greeter {
         process::exit(1);
       }
 
+      // Initialize logger immediately after CLI parsing so that any errors
+      // during config loading are captured in the debug log.
+      greeter.logger = crate::init_logger(&greeter);
+
       // Load configuration after CLI parsing
       if !greeter.config().opt_present("no-config") {
         let config_path = greeter
@@ -284,8 +288,6 @@ impl Greeter {
 
       greeter.connect().await;
     }
-
-    greeter.logger = crate::init_logger(&greeter);
 
     let sessions = get_sessions(&greeter).unwrap_or_default();
 
@@ -440,6 +442,10 @@ impl Greeter {
       && let Ok(width) = value.parse::<u16>()
     {
       return width;
+    }
+
+    if let Some(ref config) = self.loaded_config {
+      return config.layout.width;
     }
 
     80

@@ -12,7 +12,7 @@ mod watcher;
 
 #[cfg(test)] mod integration;
 
-use std::{error::Error, fs::OpenOptions, io, process, sync::Arc};
+use std::{error::Error, io, process, sync::Arc};
 
 #[cfg(not(test))]
 use crossterm::terminal::{EnterAlternateScreen, enable_raw_mode};
@@ -24,7 +24,6 @@ use event::Event;
 use greetd_ipc::Request;
 use power::PowerPostAction;
 use tokio::sync::RwLock;
-use tracing_appender::non_blocking::WorkerGuard;
 use tui::{Terminal, backend::CrosstermBackend};
 use tuigreet::AuthStatus;
 
@@ -206,7 +205,12 @@ pub fn clear_screen() {
   }
 }
 
-fn init_logger(greeter: &Greeter) -> Option<WorkerGuard> {
+#[cfg(not(test))]
+fn init_logger(
+  greeter: &Greeter,
+) -> Option<tracing_appender::non_blocking::WorkerGuard> {
+  use std::fs::OpenOptions;
+
   use tracing_subscriber::{
     filter::{LevelFilter, Targets},
     prelude::*,
