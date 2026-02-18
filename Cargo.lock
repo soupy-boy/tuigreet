@@ -1899,7 +1899,7 @@ dependencies = [
 
 [[package]]
 name = "tuigreet"
-version = "0.9.2"
+version = "0.9.3"
 dependencies = [
  "ansi-to-tui",
  "chrono",
