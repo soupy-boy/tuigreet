@@ -1904,7 +1904,6 @@ dependencies = [
  "greetd_ipc",
  "i18n-embed",
  "i18n-embed-fl",
- "libc",
  "nix",
  "notify",
  "rand",

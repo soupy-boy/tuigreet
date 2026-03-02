@@ -37,7 +37,8 @@ This fork, as per its motivation to maintain tuigreet with much-desired features
 and stability, extends the original with TOML-based configuration (supporting
 both user and system config files with hot-reload), environment variable mapping
 for all options, detailed error messages with source context for config issues,
-and exposes core functionality as a library.
+multi-monitor terminal sizing (sizing the TTY to match a specific connected
+display via DRM), and exposes core functionality as a library.
 
 Additional, and perhaps less relevant, work includes NixOS VM-based integration
 tests, various bug fixes (session wrapper behavior, UID handling, padding
@@ -351,6 +352,46 @@ TOML parsing error at line 5, column 15:
         |         ^^^^^^^^^^^^^^^^ expected integer, found string
    6 | window_padding = 2
 ```
+
+### Multi-monitor Support
+
+On multi-monitor setups the Linux virtual console may span all connected
+displays, leaving the greeter rendered across a larger-than-intended area.
+tuigreet can resize the TTY to match the native resolution of a specific monitor
+by reading connector information from `/sys/class/drm/` and applying the new
+dimensions via `TIOCSWINSZ` before the TUI starts.
+
+To see which connectors are available on your system, run:
+
+```sh
+tuigreet --list-outputs
+```
+
+Then declare the target display in your config. Mark one output `primary = true`
+to use it for sizing; if none is marked primary the first enabled entry is used.
+Disable any outputs you do not want to affect sizing with `enabled = false`:
+
+```toml
+[[outputs]]
+connector = "DP-1"
+primary = true
+
+[[outputs]]
+connector = "HDMI-A-1"
+enabled = false
+```
+
+If you already know the exact character-cell dimensions you want (e.g. from a
+fixed font size), you can bypass the DRM detection entirely with an explicit
+override. Both `cols` and `rows` must be provided together:
+
+```toml
+[terminal]
+cols = 237
+rows = 52
+```
+
+`[terminal]` takes precedence over `[[outputs]]` when both are set.
 
 ### Sessions
 
