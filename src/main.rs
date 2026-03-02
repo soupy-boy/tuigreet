@@ -6,6 +6,7 @@ mod greeter;
 mod info;
 mod ipc;
 mod keyboard;
+mod output;
 mod power;
 mod ui;
 mod watcher;

@@ -260,6 +260,17 @@ impl Greeter {
                 // Store config for later use
                 greeter.loaded_config = Some(config.clone());
 
+                // Apply terminal sizing based on [[outputs]] / [terminal]
+                // config.  This must happen before the TUI is started so
+                // that ratatui sees the correct terminal dimensions.
+                if !config.outputs.is_empty() || config.terminal.cols.is_some()
+                {
+                  crate::output::apply_output_config(
+                    &config.outputs,
+                    &config.terminal,
+                  );
+                }
+
                 // Handle --dump-config
                 if greeter.config().opt_present("dump-config") {
                   let toml_str = toml::to_string_pretty(&config)
@@ -511,14 +522,22 @@ impl Greeter {
 
   pub fn greet_align(&self) -> GreetAlign {
     if let Some(value) = self.option("greet-align") {
-      match value.as_str() {
+      return match value.as_str() {
         "left" => GreetAlign::Left,
         "right" => GreetAlign::Right,
         _ => GreetAlign::Center,
-      }
-    } else {
-      GreetAlign::default()
+      };
     }
+
+    if let Some(ref config) = self.loaded_config {
+      return match config.display.align_greeting {
+        tuigreet::config::AlignGreeting::Left => GreetAlign::Left,
+        tuigreet::config::AlignGreeting::Right => GreetAlign::Right,
+        tuigreet::config::AlignGreeting::Center => GreetAlign::Center,
+      };
+    }
+
+    GreetAlign::default()
   }
 
   // Sets the locale that will be used for this invocation from environment.
@@ -711,6 +730,7 @@ impl Greeter {
     opts.optopt("", "config", "path to configuration file", "PATH");
     opts.optflag("", "no-config", "disable loading configuration files");
     opts.optflag("", "dump-config", "print effective configuration and exit");
+    opts.optflag("", "list-outputs", "list available DRM outputs and exit");
 
     opts
   }
@@ -737,6 +757,10 @@ impl Greeter {
     if self.config().opt_present("version") {
       print_version();
       process::exit(0);
+    }
+
+    if self.config().opt_present("list-outputs") {
+      crate::output::list_outputs();
     }
 
     if self.config().opt_present("debug") {

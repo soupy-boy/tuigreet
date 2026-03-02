@@ -32,6 +32,90 @@ pub struct Config {
 
   #[serde(default)]
   pub theme: ThemeConfig,
+
+  /// Per-output (display/monitor) configuration.
+  /// Use `[[outputs]]` array of tables in TOML.
+  #[serde(default)]
+  pub outputs: Vec<OutputConfig>,
+
+  /// Explicit terminal size override. When both `cols` and `rows` are set
+  /// they take precedence over output-derived sizing.
+  #[serde(default)]
+  pub terminal: TerminalConfig,
+}
+
+/// Configuration for a single DRM output (monitor/display).
+///
+/// Example:
+/// ```toml
+/// [[outputs]]
+/// connector = "DP-1"
+/// primary = true
+///
+/// [[outputs]]
+/// connector = "HDMI-A-1"
+/// enabled = false
+/// ```
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct OutputConfig {
+  /// DRM connector name as it appears in `/sys/class/drm/` (e.g. `"DP-1"`,
+  /// `"HDMI-A-1"`).
+  pub connector: String,
+
+  /// Whether tuigreet should use this output. Defaults to `true`.
+  #[serde(default = "default_true")]
+  pub enabled: bool,
+
+  /// If `true`, size the terminal to match this output's native resolution.
+  /// At most one output should be marked primary. If none is marked primary
+  /// the first enabled output is used for sizing.
+  #[serde(default)]
+  pub primary: bool,
+}
+
+/// Explicit terminal character-cell size override.
+///
+/// When both `cols` and `rows` are provided they take highest priority over
+/// output-derived sizing. Providing only one of the two fields is an error.
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+pub struct TerminalConfig {
+  /// Number of character columns.
+  pub cols: Option<u16>,
+  /// Number of character rows.
+  pub rows: Option<u16>,
+}
+
+impl TerminalConfig {
+  /// Returns `true` when the config is consistent: either both fields are
+  /// absent, or both are `Some(v)` with `v > 0`.  Any other combination is
+  /// invalid.
+  pub fn is_valid(&self) -> bool {
+    self.invalid_reason().is_none()
+  }
+
+  /// Returns a human-readable error string describing the first invalid
+  /// condition found, or `None` when the config is consistent.
+  pub fn invalid_reason(&self) -> Option<String> {
+    match (self.cols, self.rows) {
+      (Some(_), None) => Some(
+        "`terminal.cols` is set but `terminal.rows` is missing; both must \
+         be provided together"
+          .to_string(),
+      ),
+      (None, Some(_)) => Some(
+        "`terminal.rows` is set but `terminal.cols` is missing; both must \
+         be provided together"
+          .to_string(),
+      ),
+      (Some(0), Some(_)) => {
+        Some("`terminal.cols` must be greater than 0".to_string())
+      },
+      (Some(_), Some(0)) => {
+        Some("`terminal.rows` must be greater than 0".to_string())
+      },
+      _ => None,
+    }
+  }
 }
 
 /// General configuration options
@@ -357,6 +441,10 @@ pub enum WidgetPosition {
 }
 
 // Default value functions
+fn default_true() -> bool {
+  true
+}
+
 fn default_show_title() -> bool {
   true
 }
