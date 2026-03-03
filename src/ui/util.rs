@@ -78,15 +78,21 @@ pub fn get_rect_bounds(
   items: usize,
 ) -> (u16, u16, u16, u16) {
   let width = greeter.width();
-  let height: u16 = get_height(greeter) + items as u16;
+  let box_height: u16 = get_height(greeter) + items as u16;
+
+  // Account for the message area rendered below the container so that the
+  // combined block (box + message) is centered rather than just the box.
+  let (_, message_height) =
+    get_message_height(greeter, greeter.container_padding(), 0);
+  let total_height = box_height.saturating_add(message_height);
 
   let x = if width < area.width {
     (area.width - width) / 2
   } else {
     0
   };
-  let y = if height < area.height {
-    (area.height - height) / 2
+  let y = if total_height < area.height {
+    (area.height - total_height) / 2
   } else {
     0
   };
@@ -96,13 +102,13 @@ pub fn get_rect_bounds(
   } else {
     (x, width)
   };
-  let (y, height) = if (y + height) >= area.height {
-    (0, area.height)
+  let (y, box_height) = if (y + total_height) >= area.height {
+    (0, box_height)
   } else {
-    (y, height)
+    (y, box_height)
   };
 
-  (x, y, width, height)
+  (x, y, width, box_height)
 }
 
 // Computes the size of a text entry, from the container width and, if
@@ -295,10 +301,32 @@ mod test {
     assert_eq!(height, 6);
   }
 
-  // | Username: __________________________ |
-  // <--------------------------------------> width 40 (padding 1)
-  //   <-------> prompt width 9
-  //             <------------------------> input width 26
+  #[test]
+  fn test_rect_bounds_with_message() {
+    // With a message present, the combined block (box + message) should be
+    // centered, not just the box. The box itself is unchanged; only `y` shifts
+    // upward to leave room for the message below.
+    //
+    // Setup: default config (width=80, container_padding=2), Mode::Username,
+    //        message="Wrong password" (fits on one line at width 76).
+    //
+    // box_height     = (2*2) + 1 = 5
+    // message_height = line_count(76) + padding = 1 + 2 = 3
+    // total_height   = 8
+    // y = (100 - 8) / 2 = 46  (vs. (100 - 5) / 2 = 47 without the fix)
+    let mut greeter = Greeter::default();
+    greeter.config = Greeter::options().parse::<&[&str]>(&[]).ok();
+    greeter.message = Some("Wrong password".into());
+
+    let (x, y, width, height) =
+      get_rect_bounds(&greeter, Rect::new(0, 0, 100, 100), 0);
+
+    assert_eq!(x, 10); // (100 - 80) / 2
+    assert_eq!(y, 46); // (100 - 8) / 2, not (100 - 5) / 2 = 47
+    assert_eq!(width, 80);
+    assert_eq!(height, 5);
+  }
+
   #[test]
   fn input_width() {
     let mut greeter = Greeter::default();
