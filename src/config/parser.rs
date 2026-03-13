@@ -264,6 +264,20 @@ pub fn merge_configs(dest: &mut Config, src: Config) {
     dest.keybindings.power = src.keybindings.power;
   }
 
+  // Outputs config. If source defines any outputs, they fully replace the
+  // destination list rather than merging element-by-element.
+  if !src.outputs.is_empty() {
+    dest.outputs = src.outputs;
+  }
+
+  // Terminal size override
+  if src.terminal.cols.is_some() {
+    dest.terminal.cols = src.terminal.cols;
+  }
+  if src.terminal.rows.is_some() {
+    dest.terminal.rows = src.terminal.rows;
+  }
+
   // Theme config
   // We merge individual fields if they're different from defaults
   if src.theme.border != defaults.theme.border {
@@ -365,6 +379,46 @@ impl Config {
       if let Some(ref wrapper) = self.session.xsession_wrapper {
         self.validate_wrapper_command(wrapper)?;
       }
+    }
+
+    // Validate [[outputs]] entries
+    {
+      let primary_count = self.outputs.iter().filter(|o| o.primary).count();
+      if primary_count > 1 {
+        return Err(ConfigError::Validation(format!(
+          "At most one output may be marked `primary = true`, but \
+           {primary_count} are"
+        )));
+      }
+
+      for output in &self.outputs {
+        if output.connector.contains('/') || output.connector.contains("..") {
+          return Err(ConfigError::Validation(format!(
+            "Output connector name '{}' must not contain path separators",
+            output.connector
+          )));
+        }
+        if output.connector.is_empty() {
+          return Err(ConfigError::Validation(
+            "Output connector name must not be empty".to_string(),
+          ));
+        }
+      }
+
+      // Warn if [[outputs]] is configured but all are disabled
+      if !self.outputs.is_empty() && self.outputs.iter().all(|o| !o.enabled) {
+        warnings.push(
+          "All [[outputs]] entries have `enabled = false`; no output will be \
+           used for terminal sizing"
+            .to_string(),
+        );
+      }
+    }
+
+    // Validate [terminal].
+    // Both cols and rows must be set together
+    if let Some(reason) = self.terminal.invalid_reason() {
+      return Err(ConfigError::Validation(reason));
     }
 
     // Add validation warnings for potentially problematic configurations
@@ -593,27 +647,6 @@ user_session = true
   }
 
   #[test]
-  fn test_validate_enforces_mutual_exclusion() {
-    let toml_content = r#"
-[remember]
-username = true
-session = true
-user_session = true
-"#;
-
-    let config: Config =
-      toml::from_str(toml_content).expect("Failed to parse TOML");
-    let validation_result = config.validate(false);
-
-    // Both flags being set is a warning, not a hard error.
-    assert!(
-      validation_result.is_ok(),
-      "Expected validation to succeed with a warning, got: {:?}",
-      validation_result
-    );
-  }
-
-  #[test]
   fn test_keybindings_distinctness_in_config() {
     let toml_content = r#"
 [keybindings]
@@ -641,58 +674,12 @@ power = 7
   fn test_session_config_default_consistency() {
     let default_config = Config::default();
 
-    println!("Default::default() SessionConfig:");
-    println!(
-      "  sessions_dirs: {:?}",
-      default_config.session.sessions_dirs
-    );
-    println!(
-      "  xsessions_dirs: {:?}",
-      default_config.session.xsessions_dirs
-    );
-    println!(
-      "  xsession_wrapper: {:?}",
-      default_config.session.xsession_wrapper
-    );
-
-    let empty_toml = r#""#;
-    let deserialized_config: Config =
-      toml::from_str(empty_toml).expect("Failed to parse empty TOML");
-
-    println!("\nDeserialized from empty TOML:");
-    println!(
-      "  sessions_dirs: {:?}",
-      deserialized_config.session.sessions_dirs
-    );
-    println!(
-      "  xsessions_dirs: {:?}",
-      deserialized_config.session.xsessions_dirs
-    );
-    println!(
-      "  xsession_wrapper: {:?}",
-      deserialized_config.session.xsession_wrapper
-    );
-
     let partial_toml = r#"
 [session]
 command = "test"
 "#;
     let partial_config: Config =
       toml::from_str(partial_toml).expect("Failed to parse partial TOML");
-
-    println!("\nDeserialized with [session] present but fields missing:");
-    println!(
-      "  sessions_dirs: {:?}",
-      partial_config.session.sessions_dirs
-    );
-    println!(
-      "  xsessions_dirs: {:?}",
-      partial_config.session.xsessions_dirs
-    );
-    println!(
-      "  xsession_wrapper: {:?}",
-      partial_config.session.xsession_wrapper
-    );
 
     assert_eq!(
       default_config.session.sessions_dirs,
@@ -705,31 +692,12 @@ command = "test"
   fn test_power_config_default_consistency() {
     let default_config = Config::default();
 
-    println!("Default::default() PowerConfig:");
-    println!("  shutdown: {:?}", default_config.power.shutdown);
-    println!("  reboot: {:?}", default_config.power.reboot);
-    println!("  use_setsid: {:?}", default_config.power.use_setsid);
-
-    let empty_toml = r#""#;
-    let deserialized_config: Config =
-      toml::from_str(empty_toml).expect("Failed to parse empty TOML");
-
-    println!("\nDeserialized from empty TOML:");
-    println!("  shutdown: {:?}", deserialized_config.power.shutdown);
-    println!("  reboot: {:?}", deserialized_config.power.reboot);
-    println!("  use_setsid: {:?}", deserialized_config.power.use_setsid);
-
     let partial_toml = r#"
 [power]
 shutdown = "poweroff"
 "#;
     let partial_config: Config =
       toml::from_str(partial_toml).expect("Failed to parse partial TOML");
-
-    println!("\nDeserialized with [power] present but use_setsid missing:");
-    println!("  shutdown: {:?}", partial_config.power.shutdown);
-    println!("  reboot: {:?}", partial_config.power.reboot);
-    println!("  use_setsid: {:?}", partial_config.power.use_setsid);
 
     assert_eq!(
       default_config.power.use_setsid, partial_config.power.use_setsid,
@@ -754,6 +722,229 @@ session_wrapper = ""
     assert!(
       result.is_err(),
       "Empty wrapper command should fail validation"
+    );
+  }
+
+  // [[outputs]] validation
+  #[test]
+  fn test_outputs_toml_roundtrip() {
+    let toml_content = r#"
+[[outputs]]
+connector = "DP-1"
+primary = true
+
+[[outputs]]
+connector = "HDMI-A-1"
+enabled = false
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse [[outputs]] TOML");
+
+    assert_eq!(config.outputs.len(), 2);
+    assert_eq!(config.outputs[0].connector, "DP-1");
+    assert!(config.outputs[0].primary);
+    assert!(config.outputs[0].enabled); // default = true
+    assert_eq!(config.outputs[1].connector, "HDMI-A-1");
+    assert!(!config.outputs[1].primary); // default = false
+    assert!(!config.outputs[1].enabled);
+
+    // Validation should pass
+    assert!(config.validate(false).is_ok());
+  }
+
+  #[test]
+  fn test_outputs_multiple_primary_is_error() {
+    let toml_content = r#"
+[[outputs]]
+connector = "DP-1"
+primary = true
+
+[[outputs]]
+connector = "HDMI-A-1"
+primary = true
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let result = config.validate(false);
+    assert!(
+      matches!(result, Err(ConfigError::Validation(_))),
+      "Multiple primary outputs should be a Validation error, got: {:?}",
+      result
+    );
+  }
+
+  #[test]
+  fn test_outputs_empty_connector_is_error() {
+    let toml_content = r#"
+[[outputs]]
+connector = ""
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let result = config.validate(false);
+    assert!(
+      matches!(result, Err(ConfigError::Validation(_))),
+      "Empty connector name should be a Validation error, got: {:?}",
+      result
+    );
+  }
+
+  #[test]
+  fn test_outputs_path_separator_in_connector_is_error() {
+    for bad in &["../DP-1", "/sys/class/drm/DP-1", "foo/bar"] {
+      let config: Config =
+        toml::from_str(&format!("[[outputs]]\nconnector = \"{}\"\n", bad))
+          .expect("Failed to parse TOML");
+      let result = config.validate(false);
+      assert!(
+        matches!(result, Err(ConfigError::Validation(_))),
+        "Connector '{}' with path separator should be a Validation error, \
+         got: {:?}",
+        bad,
+        result
+      );
+    }
+  }
+
+  #[test]
+  fn test_outputs_valid_connector_names() {
+    // Typical DRM connector name patterns that must pass
+    for good in &[
+      "DP-1",
+      "HDMI-A-1",
+      "DisplayPort-2",
+      "eDP-1",
+      "VGA-1",
+      "DVI-D-1",
+    ] {
+      let config: Config =
+        toml::from_str(&format!("[[outputs]]\nconnector = \"{}\"\n", good))
+          .expect("Failed to parse TOML");
+      assert!(
+        config.validate(false).is_ok(),
+        "Connector '{}' should be valid, but validation failed",
+        good
+      );
+    }
+  }
+
+  #[test]
+  fn test_outputs_all_disabled_is_warning() {
+    let toml_content = r#"
+[[outputs]]
+connector = "DP-1"
+enabled = false
+
+[[outputs]]
+connector = "HDMI-A-1"
+enabled = false
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let result = config.validate(false);
+    assert!(
+      result.is_ok(),
+      "All-disabled outputs should not be an error"
+    );
+    let warnings = result.unwrap();
+    assert!(
+      warnings.iter().any(|w| w.contains("enabled = false")),
+      "Expected a warning about all outputs being disabled, got: {:?}",
+      warnings
+    );
+  }
+
+  #[test]
+  fn test_outputs_single_primary_passes() {
+    let toml_content = r#"
+[[outputs]]
+connector = "DP-1"
+primary = true
+
+[[outputs]]
+connector = "HDMI-A-1"
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    assert!(config.validate(false).is_ok());
+  }
+
+  // [terminal] validation
+  #[test]
+  fn test_terminal_both_set_passes() {
+    let toml_content = r#"
+[terminal]
+cols = 237
+rows = 52
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    assert_eq!(config.terminal.cols, Some(237));
+    assert_eq!(config.terminal.rows, Some(52));
+    assert!(config.validate(false).is_ok());
+  }
+
+  #[test]
+  fn test_terminal_cols_without_rows_is_error() {
+    let toml_content = r#"
+[terminal]
+cols = 237
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let result = config.validate(false);
+    assert!(
+      matches!(result, Err(ConfigError::Validation(_))),
+      "cols without rows should be a Validation error, got: {:?}",
+      result
+    );
+  }
+
+  #[test]
+  fn test_terminal_rows_without_cols_is_error() {
+    let toml_content = r#"
+[terminal]
+rows = 52
+"#;
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let result = config.validate(false);
+    assert!(
+      matches!(result, Err(ConfigError::Validation(_))),
+      "rows without cols should be a Validation error, got: {:?}",
+      result
+    );
+  }
+
+  #[test]
+  fn test_terminal_neither_set_passes() {
+    let config = Config::default();
+    assert!(config.validate(false).is_ok());
+  }
+
+  #[test]
+  fn test_terminal_zero_cols_is_error() {
+    let mut config = Config::default();
+    config.terminal.cols = Some(0);
+    config.terminal.rows = Some(52);
+    let result = config.validate(false);
+    assert!(
+      matches!(result, Err(ConfigError::Validation(_))),
+      "cols = 0 should be a Validation error, got: {:?}",
+      result
+    );
+  }
+
+  #[test]
+  fn test_terminal_zero_rows_is_error() {
+    let mut config = Config::default();
+    config.terminal.cols = Some(237);
+    config.terminal.rows = Some(0);
+    let result = config.validate(false);
+    assert!(
+      matches!(result, Err(ConfigError::Validation(_))),
+      "rows = 0 should be a Validation error, got: {:?}",
+      result
     );
   }
 
