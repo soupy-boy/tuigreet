@@ -46,6 +46,57 @@ async fn main() {
   }
 }
 
+/// Sets the controlling terminal to graphics mode so the kernel stops routing
+/// log messages to the VT framebuffer while the TUI is active.
+///
+/// Failures are non-fatal, tuigreet will still run, but boot messages may
+/// bleed through on systems where the ioctl is unavailable.
+#[cfg(not(test))]
+fn claim_vt() {
+  use std::{ffi::c_void, fs::OpenOptions, os::unix::io::AsRawFd};
+
+  use output::ffi::{KD_GRAPHICS, KDSETMODE, ioctl};
+
+  let Ok(tty) = OpenOptions::new().read(true).write(true).open("/dev/tty")
+  else {
+    tracing::warn!("could not open /dev/tty to claim VT");
+    return;
+  };
+
+  // SAFETY: `tty` is a valid open fd to a VT device. `KDSETMODE` takes an
+  // integer argument passed as a pointer-sized value; the kernel reads it as
+  // a mode constant, not a pointer.
+  let ret = unsafe {
+    ioctl(
+      tty.as_raw_fd(),
+      KDSETMODE,
+      KD_GRAPHICS as usize as *mut c_void,
+    )
+  };
+
+  if ret < 0 {
+    tracing::warn!(
+      "KDSETMODE(KD_GRAPHICS) failed; boot logs may overwrite the TUI"
+    );
+  }
+}
+
+/// Restores the controlling terminal to text mode. Called on every exit path
+/// so the console is usable after tuigreet terminates.
+#[cfg(not(test))]
+fn release_vt() {
+  use std::{ffi::c_void, fs::OpenOptions, os::unix::io::AsRawFd};
+
+  use output::ffi::{KD_TEXT, KDSETMODE, ioctl};
+
+  if let Ok(tty) = OpenOptions::new().read(true).write(true).open("/dev/tty") {
+    // SAFETY: same as claim_vt. `tty` is a valid open fd to a VT device.
+    unsafe {
+      ioctl(tty.as_raw_fd(), KDSETMODE, KD_TEXT as usize as *mut c_void);
+    }
+  }
+}
+
 async fn run<B>(
   backend: B,
   mut greeter: Greeter,
@@ -60,8 +111,18 @@ where
 
   #[cfg(not(test))]
   {
-    enable_raw_mode()?;
-    execute!(io::stdout(), EnterAlternateScreen)?;
+    claim_vt();
+
+    if let Err(err) = enable_raw_mode() {
+      release_vt();
+      return Err(err.into());
+    }
+
+    if let Err(err) = execute!(io::stdout(), EnterAlternateScreen) {
+      let _ = disable_raw_mode();
+      release_vt();
+      return Err(err.into());
+    }
   }
 
   let mut terminal = Terminal::new(backend)?;
@@ -149,6 +210,9 @@ where
           terminal.clear()?;
           disable_raw_mode()?;
 
+          #[cfg(not(test))]
+          release_vt();
+
           break;
         }
       },
@@ -179,6 +243,9 @@ async fn exit(greeter: &mut Greeter, status: AuthStatus) {
   let _ = execute!(io::stdout(), LeaveAlternateScreen);
   let _ = disable_raw_mode();
 
+  #[cfg(not(test))]
+  release_vt();
+
   greeter.exit = Some(status);
 }
 
@@ -191,6 +258,9 @@ fn register_panic_handler() {
 
     let _ = execute!(io::stdout(), LeaveAlternateScreen);
     let _ = disable_raw_mode();
+
+    #[cfg(not(test))]
+    release_vt();
 
     hook(info);
   }));
