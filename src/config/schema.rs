@@ -99,20 +99,16 @@ impl TerminalConfig {
   #[must_use] 
   pub fn invalid_reason(&self) -> Option<String> {
     match (self.cols, self.rows) {
-      (Some(_), None) => {
-        Some(
-          "`terminal.cols` is set but `terminal.rows` is missing; both must \
-           be provided together"
-            .to_string(),
-        )
-      },
-      (None, Some(_)) => {
-        Some(
-          "`terminal.rows` is set but `terminal.cols` is missing; both must \
-           be provided together"
-            .to_string(),
-        )
-      },
+      (Some(_), None) => Some(
+        "`terminal.cols` is set but `terminal.rows` is missing; both must \
+         be provided together"
+          .to_string(),
+      ),
+      (None, Some(_)) => Some(
+        "`terminal.rows` is set but `terminal.cols` is missing; both must \
+         be provided together"
+          .to_string(),
+      ),
       (Some(0), Some(_)) => {
         Some("`terminal.cols` must be greater than 0".to_string())
       },
