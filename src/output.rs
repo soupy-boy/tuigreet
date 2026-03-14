@@ -10,28 +10,19 @@ use std::{fs, process};
 #[cfg(not(test))]
 use tuigreet::config::{OutputConfig, TerminalConfig};
 
-/// Raw FFI bindings for terminal ioctls.
+/// Raw FFI bindings for the two terminal-sizing ioctls.
 ///
 /// These are Linux-specific and only compiled outside the test harness to avoid
 /// needing a libc dependency.
 #[cfg(not(test))]
-pub mod ffi {
-  use std::ffi::{c_int, c_ulong, c_void};
+mod ffi {
+  use std::ffi::{c_int, c_ulong};
 
   /// `ioctl(TIOCGWINSZ, ...)` request code (Linux, most architectures).
   pub const TIOCGWINSZ: c_ulong = 0x5413;
 
   /// `ioctl(TIOCSWINSZ, ...)` request code (Linux, most architectures).
   pub const TIOCSWINSZ: c_ulong = 0x5414;
-
-  /// `ioctl(KDSETMODE, ...)` request code (Linux, most architectures).
-  pub const KDSETMODE: c_ulong = 0x4B3A;
-
-  /// Text mode: the kernel renders console output to the VT.
-  pub const KD_TEXT: c_int = 0x0;
-
-  /// Graphics mode: the kernel stops writing text/log messages to the VT.
-  pub const KD_GRAPHICS: c_int = 0x1;
 
   #[repr(C)]
   pub struct WinSize {
@@ -42,11 +33,7 @@ pub mod ffi {
   }
 
   unsafe extern "C" {
-    /// Generic `ioctl(2)` binding. The third argument is `*mut c_void` to
-    /// accommodate both pointer arguments (`TIOCGWINSZ`/`TIOCSWINSZ`) and
-    /// integer arguments (`KDSETMODE`). Callers are responsible for passing
-    /// the correct type for the given request code.
-    pub fn ioctl(fd: c_int, request: c_ulong, arg: *mut c_void) -> c_int;
+    pub fn ioctl(fd: c_int, request: c_ulong, arg: *mut WinSize) -> c_int;
   }
 }
 
@@ -345,8 +332,7 @@ fn apply_winsize(rows: u16, cols: u16, xpixel: u16, ypixel: u16) {
       ws_xpixel: xpixel,
       ws_ypixel: ypixel,
     };
-    // SAFETY: `tty` is a valid open fd; `TIOCSWINSZ` expects a `*mut WinSize`.
-    let ret = ioctl(fd, TIOCSWINSZ, (&raw mut ws).cast());
+    let ret = ioctl(fd, TIOCSWINSZ, &mut ws);
     if ret != 0 {
       tracing::warn!("TIOCSWINSZ failed: {}", std::io::Error::last_os_error());
     }
@@ -367,9 +353,7 @@ fn get_winsize(fd: i32) -> Option<(u16, u16, u16, u16)> {
       ws_xpixel: 0,
       ws_ypixel: 0,
     };
-    // SAFETY: `fd` is a valid terminal fd; `TIOCGWINSZ` expects a `*mut
-    // WinSize`.
-    let ret = ioctl(fd, TIOCGWINSZ, (&raw mut ws).cast());
+    let ret = ioctl(fd, TIOCGWINSZ, &mut ws);
     if ret == 0 {
       Some((ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel))
     } else {
