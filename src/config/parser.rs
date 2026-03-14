@@ -57,21 +57,180 @@ pub fn load_config(
   Ok(config)
 }
 
-/// Overwrites dest with src. Used for layering: defaults -> system -> user ->
-/// env -> CLI
+/// Merges src into dest, only overwriting fields that differ from their
+/// defaults. Used for layering: defaults -> system -> user -> env -> CLI
 fn apply_config_layer(dest: &mut Config, src: Config) {
-  dest.general = src.general;
-  dest.session = src.session;
-  dest.display = src.display;
-  dest.remember = src.remember;
-  dest.user_menu = src.user_menu;
-  dest.secret = src.secret;
-  dest.layout = src.layout;
-  dest.power = src.power;
-  dest.keybindings = src.keybindings;
-  dest.theme = src.theme;
-  dest.outputs = src.outputs;
-  dest.terminal = src.terminal;
+  let defaults = Config::default();
+
+  // General
+  if src.general.debug != defaults.general.debug {
+    dest.general.debug = src.general.debug;
+  }
+  if src.general.log_file != defaults.general.log_file {
+    dest.general.log_file = src.general.log_file;
+  }
+
+  // Session
+  if src.session.command != defaults.session.command {
+    dest.session.command = src.session.command;
+  }
+  if src.session.sessions_dirs != defaults.session.sessions_dirs {
+    dest.session.sessions_dirs = src.session.sessions_dirs;
+  }
+  if src.session.xsessions_dirs != defaults.session.xsessions_dirs {
+    dest.session.xsessions_dirs = src.session.xsessions_dirs;
+  }
+  if src.session.session_wrapper != defaults.session.session_wrapper {
+    dest.session.session_wrapper = src.session.session_wrapper;
+  }
+  if src.session.xsession_wrapper != defaults.session.xsession_wrapper {
+    dest.session.xsession_wrapper = src.session.xsession_wrapper;
+  }
+  if src.session.environments != defaults.session.environments {
+    dest.session.environments = src.session.environments;
+  }
+
+  // Display
+  if src.display.show_time != defaults.display.show_time {
+    dest.display.show_time = src.display.show_time;
+  }
+  if src.display.time_format != defaults.display.time_format {
+    dest.display.time_format = src.display.time_format;
+  }
+  if src.display.greeting != defaults.display.greeting {
+    dest.display.greeting = src.display.greeting;
+  }
+  if src.display.show_title != defaults.display.show_title {
+    dest.display.show_title = src.display.show_title;
+  }
+  if src.display.issue != defaults.display.issue {
+    dest.display.issue = src.display.issue;
+  }
+  if src.display.align_greeting != defaults.display.align_greeting {
+    dest.display.align_greeting = src.display.align_greeting;
+  }
+
+  // Remember
+  if src.remember.default_user != defaults.remember.default_user {
+    dest.remember.default_user = src.remember.default_user;
+  }
+  if src.remember.username != defaults.remember.username {
+    dest.remember.username = src.remember.username;
+  }
+  if src.remember.session != defaults.remember.session {
+    dest.remember.session = src.remember.session;
+  }
+  if src.remember.user_session != defaults.remember.user_session {
+    dest.remember.user_session = src.remember.user_session;
+  }
+
+  // User menu
+  if src.user_menu.enabled != defaults.user_menu.enabled {
+    dest.user_menu.enabled = src.user_menu.enabled;
+  }
+  if src.user_menu.min_uid != defaults.user_menu.min_uid {
+    dest.user_menu.min_uid = src.user_menu.min_uid;
+  }
+  if src.user_menu.max_uid != defaults.user_menu.max_uid {
+    dest.user_menu.max_uid = src.user_menu.max_uid;
+  }
+
+  // Secret
+  if src.secret.mode != defaults.secret.mode {
+    dest.secret.mode = src.secret.mode;
+  }
+  if src.secret.characters != defaults.secret.characters {
+    dest.secret.characters = src.secret.characters;
+  }
+
+  // Layout
+  if src.layout.width != defaults.layout.width {
+    dest.layout.width = src.layout.width;
+  }
+  if src.layout.window_padding != defaults.layout.window_padding {
+    dest.layout.window_padding = src.layout.window_padding;
+  }
+  if src.layout.container_padding != defaults.layout.container_padding {
+    dest.layout.container_padding = src.layout.container_padding;
+  }
+  if src.layout.prompt_padding != defaults.layout.prompt_padding {
+    dest.layout.prompt_padding = src.layout.prompt_padding;
+  }
+  if src.layout.widgets.time_position != defaults.layout.widgets.time_position {
+    dest.layout.widgets.time_position = src.layout.widgets.time_position;
+  }
+  if src.layout.widgets.status_position
+    != defaults.layout.widgets.status_position
+  {
+    dest.layout.widgets.status_position = src.layout.widgets.status_position;
+  }
+
+  // Power
+  if src.power.shutdown != defaults.power.shutdown {
+    dest.power.shutdown = src.power.shutdown;
+  }
+  if src.power.reboot != defaults.power.reboot {
+    dest.power.reboot = src.power.reboot;
+  }
+  if src.power.use_setsid != defaults.power.use_setsid {
+    dest.power.use_setsid = src.power.use_setsid;
+  }
+
+  // Keybindings
+  if src.keybindings.command != defaults.keybindings.command {
+    dest.keybindings.command = src.keybindings.command;
+  }
+  if src.keybindings.sessions != defaults.keybindings.sessions {
+    dest.keybindings.sessions = src.keybindings.sessions;
+  }
+  if src.keybindings.power != defaults.keybindings.power {
+    dest.keybindings.power = src.keybindings.power;
+  }
+
+  // Outputs: a non-empty list from a higher-priority layer fully replaces
+  if !src.outputs.is_empty() {
+    dest.outputs = src.outputs;
+  }
+
+  // Terminal: replace individual fields only if source specifies them
+  if src.terminal.cols.is_some() {
+    dest.terminal.cols = src.terminal.cols;
+  }
+  if src.terminal.rows.is_some() {
+    dest.terminal.rows = src.terminal.rows;
+  }
+
+  // Theme: all fields are Option<String>, default is None
+  if src.theme.border.is_some() {
+    dest.theme.border = src.theme.border;
+  }
+  if src.theme.text.is_some() {
+    dest.theme.text = src.theme.text;
+  }
+  if src.theme.time.is_some() {
+    dest.theme.time = src.theme.time;
+  }
+  if src.theme.container.is_some() {
+    dest.theme.container = src.theme.container;
+  }
+  if src.theme.title.is_some() {
+    dest.theme.title = src.theme.title;
+  }
+  if src.theme.greet.is_some() {
+    dest.theme.greet = src.theme.greet;
+  }
+  if src.theme.prompt.is_some() {
+    dest.theme.prompt = src.theme.prompt;
+  }
+  if src.theme.input.is_some() {
+    dest.theme.input = src.theme.input;
+  }
+  if src.theme.action.is_some() {
+    dest.theme.action = src.theme.action;
+  }
+  if src.theme.button.is_some() {
+    dest.theme.button = src.theme.button;
+  }
 }
 
 /// Load configuration from a specific path.
@@ -119,14 +278,14 @@ fn toml_error(
       let actual_line_num = context_start + i + 1;
       if actual_line_num == line_num + 1 {
         let prefix = format!("  > {:3}:{}  ", actual_line_num, col_num + 1);
-        context_lines.push(format!("{}{}", prefix, line));
+        context_lines.push(format!("{prefix}{line}"));
         // Add arrow pointing to error column if reasonable column position
         if col_num < 80 {
           let prefix_len = prefix.chars().count();
           context_lines.push(format!("{}^", " ".repeat(prefix_len)));
         }
       } else {
-        context_lines.push(format!("    {:3}:    {}", actual_line_num, line));
+        context_lines.push(format!("    {actual_line_num:3}:    {line}"));
       }
     }
 
@@ -189,7 +348,7 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if matches.opt_present("issue") {
     config.display.issue = true;
   }
-  if let Some(align) = matches.opt_str("align-greeting") {
+  if let Some(align) = matches.opt_str("greet-align") {
     config.display.align_greeting = match align.as_str() {
       "left" => AlignGreeting::Left,
       "right" => AlignGreeting::Right,
@@ -213,16 +372,14 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if matches.opt_present("user-menu") {
     config.user_menu.enabled = true;
   }
-  if let Some(min_uid) = matches.opt_str("user-menu-min-uid") {
-    if let Ok(uid) = min_uid.parse::<u32>() {
+  if let Some(min_uid) = matches.opt_str("user-menu-min-uid")
+    && let Ok(uid) = min_uid.parse::<u32>() {
       config.user_menu.min_uid = uid;
     }
-  }
-  if let Some(max_uid) = matches.opt_str("user-menu-max-uid") {
-    if let Ok(uid) = max_uid.parse::<u32>() {
+  if let Some(max_uid) = matches.opt_str("user-menu-max-uid")
+    && let Ok(uid) = max_uid.parse::<u32>() {
       config.user_menu.max_uid = uid;
     }
-  }
   // Session config
   if let Some(cmd) = matches.opt_str("cmd") {
     config.session.command = Some(cmd);
@@ -236,48 +393,40 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if let Some(wrapper) = matches.opt_str("session-wrapper") {
     config.session.session_wrapper = Some(wrapper);
   }
-  if !matches.opt_present("no-xsession-wrapper") {
-    if let Some(wrapper) = matches.opt_str("xsession-wrapper") {
+  if !matches.opt_present("no-xsession-wrapper")
+    && let Some(wrapper) = matches.opt_str("xsession-wrapper") {
       config.session.xsession_wrapper = Some(wrapper);
     }
-  }
   // Layout config
-  if let Some(width) = matches.opt_str("width") {
-    if let Ok(w) = width.parse::<u16>() {
+  if let Some(width) = matches.opt_str("width")
+    && let Ok(w) = width.parse::<u16>() {
       config.layout.width = w;
     }
-  }
-  if let Some(padding) = matches.opt_str("window-padding") {
-    if let Ok(p) = padding.parse::<u16>() {
+  if let Some(padding) = matches.opt_str("window-padding")
+    && let Ok(p) = padding.parse::<u16>() {
       config.layout.window_padding = Some(p);
     }
-  }
-  if let Some(padding) = matches.opt_str("container-padding") {
-    if let Ok(p) = padding.parse::<u16>() {
+  if let Some(padding) = matches.opt_str("container-padding")
+    && let Ok(p) = padding.parse::<u16>() {
       config.layout.container_padding = Some(p);
     }
-  }
-  if let Some(padding) = matches.opt_str("prompt-padding") {
-    if let Ok(p) = padding.parse::<u16>() {
+  if let Some(padding) = matches.opt_str("prompt-padding")
+    && let Ok(p) = padding.parse::<u16>() {
       config.layout.prompt_padding = Some(p);
     }
-  }
   // Keybindings config
-  if let Some(key) = matches.opt_str("kb-command") {
-    if let Ok(k) = key.parse::<u8>() {
+  if let Some(key) = matches.opt_str("kb-command")
+    && let Ok(k) = key.parse::<u8>() {
       config.keybindings.command = k;
     }
-  }
-  if let Some(key) = matches.opt_str("kb-sessions") {
-    if let Ok(k) = key.parse::<u8>() {
+  if let Some(key) = matches.opt_str("kb-sessions")
+    && let Ok(k) = key.parse::<u8>() {
       config.keybindings.sessions = k;
     }
-  }
-  if let Some(key) = matches.opt_str("kb-power") {
-    if let Ok(k) = key.parse::<u8>() {
+  if let Some(key) = matches.opt_str("kb-power")
+    && let Ok(k) = key.parse::<u8>() {
       config.keybindings.power = k;
     }
-  }
   // Secret config
   if matches.opt_present("asterisks") {
     config.secret.mode = SecretMode::Characters;
@@ -420,8 +569,7 @@ impl Config {
       && padding > 10
     {
       warnings.push(format!(
-        "window_padding is very high ({}), this may cause display issues",
-        padding
+        "window_padding is very high ({padding}), this may cause display issues"
       ));
     }
 
@@ -429,8 +577,7 @@ impl Config {
       && padding > 10
     {
       warnings.push(format!(
-        "container_padding is very high ({}), this may cause display issues",
-        padding
+        "container_padding is very high ({padding}), this may cause display issues"
       ));
     }
 
@@ -1043,5 +1190,31 @@ session_wrapper = "   "
     cli.keybindings.command = 11;
     apply_config_layer(&mut config, cli);
     assert_eq!(config.keybindings.command, 11);
+  }
+
+  #[test]
+  fn test_lower_layer_preserved_when_higher_layer_uses_defaults() {
+    // System config sets a non-default value
+    let mut config = Config::default();
+    config.keybindings.power = 10;
+    config.display.show_time = true;
+    config.remember.username = true;
+
+    // User config only touches one unrelated field; all others remain at
+    // their defaults and must NOT overwrite the system values above.
+    let mut user = Config::default();
+    user.display.greeting = Some("hello".to_string());
+    apply_config_layer(&mut config, user);
+
+    assert_eq!(
+      config.keybindings.power, 10,
+      "system keybinding must survive"
+    );
+    assert!(config.display.show_time, "system show_time must survive");
+    assert!(
+      config.remember.username,
+      "system remember.username must survive"
+    );
+    assert_eq!(config.display.greeting, Some("hello".to_string()));
   }
 }

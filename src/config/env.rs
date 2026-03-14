@@ -7,8 +7,8 @@ use crate::config::{
 
 /// Apply environment variable overrides to configuration.
 ///
-/// Supported variables: TUIGREET_DEBUG, TUIGREET_LOG_FILE,
-/// TUIGREET_SESSION_COMMAND, etc. Invalid boolean values are logged as warnings
+/// Supported variables: `TUIGREET_DEBUG`, `TUIGREET_LOG_FILE`,
+/// `TUIGREET_SESSION_COMMAND`, etc. Invalid boolean values are logged as warnings
 /// and ignored.
 pub fn load_env_variables() -> Config {
   let mut config = Config::default();
@@ -268,7 +268,7 @@ pub fn load_env_variables() -> Config {
   if let Ok(value) = env::var("TUIGREET_THEME") {
     // Parse theme string using the existing `Theme::parse` logic
     // Format: "border=white;text=green;container=blue" etc.
-    let mut spec_parts = Vec::new();
+    let mut applied = false;
 
     // Parse the semicolon-separated theme specification
     for part in value.split(';') {
@@ -276,25 +276,18 @@ pub fn load_env_variables() -> Config {
         let key = key.trim();
         let color = color.trim();
 
-        // Validate that this is a known theme component
         match key {
-          "border" | "text" | "time" | "container" | "title" | "greet"
-          | "prompt" | "input" | "action" | "button" => {
-            // Apply to the theme config
-            match key {
-              "border" => config.theme.border = Some(color.to_string()),
-              "text" => config.theme.text = Some(color.to_string()),
-              "time" => config.theme.time = Some(color.to_string()),
-              "container" => config.theme.container = Some(color.to_string()),
-              "title" => config.theme.title = Some(color.to_string()),
-              "greet" => config.theme.greet = Some(color.to_string()),
-              "prompt" => config.theme.prompt = Some(color.to_string()),
-              "input" => config.theme.input = Some(color.to_string()),
-              "action" => config.theme.action = Some(color.to_string()),
-              "button" => config.theme.button = Some(color.to_string()),
-              _ => unreachable!(),
-            }
-            spec_parts.push(format!("{}={}", key, color));
+          "border" => config.theme.border = Some(color.to_string()),
+          "text" => config.theme.text = Some(color.to_string()),
+          "time" => config.theme.time = Some(color.to_string()),
+          "container" => config.theme.container = Some(color.to_string()),
+          "title" => config.theme.title = Some(color.to_string()),
+          "greet" => config.theme.greet = Some(color.to_string()),
+          "prompt" => config.theme.prompt = Some(color.to_string()),
+          "input" => config.theme.input = Some(color.to_string()),
+          "action" => config.theme.action = Some(color.to_string()),
+          "button" => {
+            config.theme.button = Some(color.to_string());
           },
           _ => {
             tracing::warn!(
@@ -302,8 +295,11 @@ pub fn load_env_variables() -> Config {
                variable",
               key
             );
+            continue;
           },
         }
+
+        applied = true;
       } else {
         tracing::warn!(
           "Invalid theme specification '{}' in TUIGREET_THEME, expected \
@@ -313,10 +309,10 @@ pub fn load_env_variables() -> Config {
       }
     }
 
-    if !spec_parts.is_empty() {
+    if applied {
       tracing::info!(
         "Applied theme from TUIGREET_THEME environment variable: {}",
-        spec_parts.join(";")
+        value
       );
     }
   }
@@ -398,7 +394,7 @@ pub fn load_env_variables() -> Config {
   if let Ok(value) = env::var("TUIGREET_TIME_POSITION") {
     match value.to_lowercase().as_str() {
       "default" => {
-        config.layout.widgets.time_position = WidgetPosition::Default
+        config.layout.widgets.time_position = WidgetPosition::Default;
       },
       "top" => config.layout.widgets.time_position = WidgetPosition::Top,
       "bottom" => config.layout.widgets.time_position = WidgetPosition::Bottom,
@@ -416,14 +412,14 @@ pub fn load_env_variables() -> Config {
   if let Ok(value) = env::var("TUIGREET_STATUS_POSITION") {
     match value.to_lowercase().as_str() {
       "default" => {
-        config.layout.widgets.status_position = WidgetPosition::Default
+        config.layout.widgets.status_position = WidgetPosition::Default;
       },
       "top" => config.layout.widgets.status_position = WidgetPosition::Top,
       "bottom" => {
-        config.layout.widgets.status_position = WidgetPosition::Bottom
+        config.layout.widgets.status_position = WidgetPosition::Bottom;
       },
       "hidden" => {
-        config.layout.widgets.status_position = WidgetPosition::Hidden
+        config.layout.widgets.status_position = WidgetPosition::Hidden;
       },
       _ => {
         tracing::warn!(
