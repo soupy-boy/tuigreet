@@ -746,12 +746,12 @@ mod tests {
 
   #[test]
   fn test_mutual_exclusive_remember_flags() {
-    let toml_content = r#"
+    let toml_content = r"
 [remember]
 username = true
 session = true
 user_session = true
-"#;
+";
 
     let config: Config =
       toml::from_str(toml_content).expect("Failed to parse TOML");
@@ -774,19 +774,18 @@ user_session = true
       warnings.iter().any(|w| {
         w.contains("remember.session") && w.contains("remember.user_session")
       }),
-      "Expected a warning about conflicting remember options, got: {:?}",
-      warnings
+      "Expected a warning about conflicting remember options, got: {warnings:?}"
     );
   }
 
   #[test]
   fn test_keybindings_distinctness_in_config() {
-    let toml_content = r#"
+    let toml_content = r"
 [keybindings]
 command = 3
 sessions = 3
 power = 7
-"#;
+";
 
     let config: Config =
       toml::from_str(toml_content).expect("Failed to parse TOML");
@@ -796,8 +795,7 @@ power = 7
       Err(ConfigError::DuplicateKeybindings) => {},
       _ => {
         panic!(
-          "Expected DuplicateKeybindings error, got: {:?}",
-          validation_result
+          "Expected DuplicateKeybindings error, got: {validation_result:?}"
         );
       },
     }
@@ -901,8 +899,7 @@ primary = true
     let result = config.validate(false);
     assert!(
       matches!(result, Err(ConfigError::Validation(_))),
-      "Multiple primary outputs should be a Validation error, got: {:?}",
-      result
+      "Multiple primary outputs should be a Validation error, got: {result:?}"
     );
   }
 
@@ -917,8 +914,7 @@ connector = ""
     let result = config.validate(false);
     assert!(
       matches!(result, Err(ConfigError::Validation(_))),
-      "Empty connector name should be a Validation error, got: {:?}",
-      result
+      "Empty connector name should be a Validation error, got: {result:?}"
     );
   }
 
@@ -926,15 +922,13 @@ connector = ""
   fn test_outputs_path_separator_in_connector_is_error() {
     for bad in &["../DP-1", "/sys/class/drm/DP-1", "foo/bar"] {
       let config: Config =
-        toml::from_str(&format!("[[outputs]]\nconnector = \"{}\"\n", bad))
+        toml::from_str(&format!("[[outputs]]\nconnector = \"{bad}\"\n"))
           .expect("Failed to parse TOML");
       let result = config.validate(false);
       assert!(
         matches!(result, Err(ConfigError::Validation(_))),
-        "Connector '{}' with path separator should be a Validation error, \
-         got: {:?}",
-        bad,
-        result
+        "Connector '{bad}' with path separator should be a Validation error, \
+         got: {result:?}"
       );
     }
   }
@@ -951,12 +945,11 @@ connector = ""
       "DVI-D-1",
     ] {
       let config: Config =
-        toml::from_str(&format!("[[outputs]]\nconnector = \"{}\"\n", good))
+        toml::from_str(&format!("[[outputs]]\nconnector = \"{good}\"\n"))
           .expect("Failed to parse TOML");
       assert!(
         config.validate(false).is_ok(),
-        "Connector '{}' should be valid, but validation failed",
-        good
+        "Connector '{good}' should be valid, but validation failed"
       );
     }
   }
@@ -982,8 +975,7 @@ enabled = false
     let warnings = result.unwrap();
     assert!(
       warnings.iter().any(|w| w.contains("enabled = false")),
-      "Expected a warning about all outputs being disabled, got: {:?}",
-      warnings
+      "Expected a warning about all outputs being disabled, got: {warnings:?}"
     );
   }
 
@@ -1005,11 +997,11 @@ connector = "HDMI-A-1"
   // [terminal] validation
   #[test]
   fn test_terminal_both_set_passes() {
-    let toml_content = r#"
+    let toml_content = r"
 [terminal]
 cols = 237
 rows = 52
-"#;
+";
     let config: Config =
       toml::from_str(toml_content).expect("Failed to parse TOML");
     assert_eq!(config.terminal.cols, Some(237));
@@ -1019,33 +1011,31 @@ rows = 52
 
   #[test]
   fn test_terminal_cols_without_rows_is_error() {
-    let toml_content = r#"
+    let toml_content = r"
 [terminal]
 cols = 237
-"#;
+";
     let config: Config =
       toml::from_str(toml_content).expect("Failed to parse TOML");
     let result = config.validate(false);
     assert!(
       matches!(result, Err(ConfigError::Validation(_))),
-      "cols without rows should be a Validation error, got: {:?}",
-      result
+      "cols without rows should be a Validation error, got: {result:?}"
     );
   }
 
   #[test]
   fn test_terminal_rows_without_cols_is_error() {
-    let toml_content = r#"
+    let toml_content = r"
 [terminal]
 rows = 52
-"#;
+";
     let config: Config =
       toml::from_str(toml_content).expect("Failed to parse TOML");
     let result = config.validate(false);
     assert!(
       matches!(result, Err(ConfigError::Validation(_))),
-      "rows without cols should be a Validation error, got: {:?}",
-      result
+      "rows without cols should be a Validation error, got: {result:?}"
     );
   }
 
@@ -1063,8 +1053,7 @@ rows = 52
     let result = config.validate(false);
     assert!(
       matches!(result, Err(ConfigError::Validation(_))),
-      "cols = 0 should be a Validation error, got: {:?}",
-      result
+      "cols = 0 should be a Validation error, got: {result:?}"
     );
   }
 
@@ -1076,8 +1065,7 @@ rows = 52
     let result = config.validate(false);
     assert!(
       matches!(result, Err(ConfigError::Validation(_))),
-      "rows = 0 should be a Validation error, got: {:?}",
-      result
+      "rows = 0 should be a Validation error, got: {result:?}"
     );
   }
 

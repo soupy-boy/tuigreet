@@ -38,7 +38,7 @@ async fn main() {
   let greeter = Greeter::new(events.sender()).await;
 
   if let Err(error) = run(backend, greeter, events).await {
-    if let Some(AuthStatus::Success) = error.downcast_ref::<AuthStatus>() {
+    if matches!(error.downcast_ref::<AuthStatus>(), Some(AuthStatus::Success)) {
       return;
     }
 
@@ -194,7 +194,7 @@ where
     match events.next().await {
       Some(Event::Render) => ui::draw(greeter.clone(), &mut terminal).await?,
       Some(Event::Key(key)) => {
-        keyboard::handle(greeter.clone(), key, ipc.clone()).await?
+        keyboard::handle(greeter.clone(), key, ipc.clone()).await?;
       },
 
       Some(Event::Exit(status)) => {
@@ -202,8 +202,7 @@ where
       },
 
       Some(Event::PowerCommand(command)) => {
-        if let PowerPostAction::ClearScreen =
-          power::run(&greeter, command).await
+        if matches!(power::run(&greeter, command).await, PowerPostAction::ClearScreen)
         {
           execute!(io::stdout(), LeaveAlternateScreen)?;
           terminal.set_cursor_position((1, 1))?;
@@ -219,7 +218,7 @@ where
 
       Some(Event::Refresh) => {
         // Config was hot reloaded, force a render
-        ui::draw(greeter.clone(), &mut terminal).await?
+        ui::draw(greeter.clone(), &mut terminal).await?;
       },
 
       _ => {},

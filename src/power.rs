@@ -27,20 +27,16 @@ pub async fn power(greeter: &mut Greeter, option: PowerOption) {
       command: Some(args),
       ..
     }) => {
-      let command = match greeter.power_setsid {
-        true => {
-          let mut command = Command::new("setsid");
-          command.args(args.split(' '));
-          command
-        },
+      let command = if greeter.power_setsid {
+        let mut command = Command::new("setsid");
+        command.args(args.split(' '));
+        command
+      } else {
+        let mut args = args.split(' ');
 
-        false => {
-          let mut args = args.split(' ');
-
-          let mut command = Command::new(args.next().unwrap_or_default());
-          command.args(args);
-          command
-        },
+        let mut command = Command::new(args.next().unwrap_or_default());
+        command.args(args);
+        command
       };
 
       Some(command)

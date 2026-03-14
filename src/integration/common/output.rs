@@ -14,7 +14,7 @@ impl Deref for Output {
 impl Output {
   pub fn debug_print(&self) {
     for line in self.lines() {
-      println!("{}", line);
+      println!("{line}");
     }
   }
 

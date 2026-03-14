@@ -39,7 +39,7 @@ use crate::{Greeter, info::capslock_status, ui::util::should_hide_cursor};
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
-pub(super) type Frame<'a> = CrosstermFrame<'a>;
+pub type Frame<'a> = CrosstermFrame<'a>;
 
 enum Button {
   Command,
@@ -265,14 +265,11 @@ where
     },
   };
 
-  let style = match greeter.mode == relevant_mode {
-    true => {
-      theme
-        .of(&[Themed::ActionButton])
-        .add_modifier(Modifier::REVERSED)
-    },
-    false => theme.of(&[Themed::Action]),
-  };
+  let style = if greeter.mode == relevant_mode {
+    theme
+      .of(&[Themed::ActionButton])
+      .add_modifier(Modifier::REVERSED)
+  } else { theme.of(&[Themed::Action]) };
 
   Span::from(buttonize(&text.into())).style(style)
 }

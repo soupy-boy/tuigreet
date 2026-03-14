@@ -126,9 +126,7 @@ async fn test_status_bar_top_position() {
   assert!(
     top_has_status && !bottom_has_status,
     "Status bar should be at row 0 when configured for WidgetPosition::Top. \
-     Found at top (row 0): {}, Found at bottom (row 22): {}",
-    top_has_status,
-    bottom_has_status
+     Found at top (row 0): {top_has_status}, Found at bottom (row 22): {bottom_has_status}"
   );
 }
 
@@ -154,9 +152,7 @@ async fn test_status_bar_hidden() {
     let has_action = line.contains("action");
     assert!(
       !(has_esc && has_action),
-      "Status bar should be hidden at line {}: {}",
-      y,
-      line
+      "Status bar should be hidden at line {y}: {line}"
     );
   }
 }
@@ -177,7 +173,7 @@ async fn test_time_widget_top_default() {
   for y in 0..6 {
     let line = get_line(&buffer, y, 80);
     // Time widget should contain digits and colons (HH:MM pattern)
-    if line.chars().filter(|c| c.is_ascii_digit()).count() >= 2
+    if line.chars().filter(char::is_ascii_digit).count() >= 2
       && line.contains(':')
     {
       found_time = true;
@@ -383,8 +379,7 @@ async fn test_multiple_layout_sizes() {
 
     assert!(
       found_content,
-      "Should render content at size {}x{}",
-      width, height
+      "Should render content at size {width}x{height}"
     );
   }
 }

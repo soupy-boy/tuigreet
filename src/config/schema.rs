@@ -56,7 +56,7 @@ pub struct Config {
 /// connector = "HDMI-A-1"
 /// enabled = false
 /// ```
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct OutputConfig {
   /// DRM connector name as it appears in `/sys/class/drm/` (e.g. `"DP-1"`,
   /// `"HDMI-A-1"`).
@@ -77,7 +77,7 @@ pub struct OutputConfig {
 ///
 /// When both `cols` and `rows` are provided they take highest priority over
 /// output-derived sizing. Providing only one of the two fields is an error.
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct TerminalConfig {
   /// Number of character columns.
   pub cols: Option<u16>,
@@ -89,12 +89,14 @@ impl TerminalConfig {
   /// Returns `true` when the config is consistent: either both fields are
   /// absent, or both are `Some(v)` with `v > 0`.  Any other combination is
   /// invalid.
+  #[must_use] 
   pub fn is_valid(&self) -> bool {
     self.invalid_reason().is_none()
   }
 
   /// Returns a human-readable error string describing the first invalid
   /// condition found, or `None` when the config is consistent.
+  #[must_use] 
   pub fn invalid_reason(&self) -> Option<String> {
     match (self.cols, self.rows) {
       (Some(_), None) => {
@@ -123,7 +125,7 @@ impl TerminalConfig {
 }
 
 /// General configuration options
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GeneralConfig {
   /// Enable debug logging
   #[serde(default)]
@@ -144,7 +146,7 @@ impl Default for GeneralConfig {
 }
 
 /// Session management configuration
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct SessionConfig {
   /// Override session with a specific command
   #[serde(default)]
@@ -185,7 +187,7 @@ impl Default for SessionConfig {
 }
 
 /// Display and visual configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct DisplayConfig {
   /// Show current time
   #[serde(default)]
@@ -213,7 +215,7 @@ pub struct DisplayConfig {
 }
 
 /// Remember/cache configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct RememberConfig {
   /// Default user to pre-fill
   #[serde(default)]
@@ -233,7 +235,7 @@ pub struct RememberConfig {
 }
 
 /// User menu configuration
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct UserMenuConfig {
   /// Enable user selection menu
   #[serde(default)]
@@ -259,7 +261,7 @@ impl Default for UserMenuConfig {
 }
 
 /// Secret display configuration
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct SecretConfig {
   /// How to display secrets
   #[serde(default)]
@@ -280,7 +282,7 @@ impl Default for SecretConfig {
 }
 
 /// Layout and sizing configuration
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct LayoutConfig {
   /// Width of the main prompt container
   #[serde(default = "default_width")]
@@ -316,7 +318,7 @@ impl Default for LayoutConfig {
 }
 
 /// Widget positioning configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct WidgetConfig {
   /// Position of time widget
   #[serde(default)]
@@ -328,7 +330,7 @@ pub struct WidgetConfig {
 }
 
 /// Power management configuration
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PowerConfig {
   /// Custom shutdown command
   #[serde(default)]
@@ -354,7 +356,7 @@ impl Default for PowerConfig {
 }
 
 /// Keybindings configuration
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct KeybindingsConfig {
   /// F-key for command menu (1-12)
   #[serde(default = "default_kb_command")]
@@ -380,7 +382,7 @@ impl Default for KeybindingsConfig {
 }
 
 /// Theme/color configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct ThemeConfig {
   /// Border color
   #[serde(default)]
@@ -415,7 +417,7 @@ pub struct ThemeConfig {
 }
 
 /// Greeting alignment options
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AlignGreeting {
   Left,
@@ -425,7 +427,7 @@ pub enum AlignGreeting {
 }
 
 /// Secret display modes
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SecretMode {
   #[default]
@@ -434,7 +436,7 @@ pub enum SecretMode {
 }
 
 /// Widget position options
-#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum WidgetPosition {
   #[default]
@@ -445,11 +447,11 @@ pub enum WidgetPosition {
 }
 
 // Default value functions
-fn default_true() -> bool {
+const fn default_true() -> bool {
   true
 }
 
-fn default_show_title() -> bool {
+const fn default_show_title() -> bool {
   true
 }
 
@@ -469,11 +471,11 @@ fn default_xsession_wrapper() -> Option<String> {
   Some("startx".to_string())
 }
 
-fn default_min_uid() -> u32 {
+const fn default_min_uid() -> u32 {
   1000
 }
 
-fn default_max_uid() -> u32 {
+const fn default_max_uid() -> u32 {
   60000
 }
 
@@ -481,22 +483,22 @@ fn default_secret_characters() -> String {
   "*".to_string()
 }
 
-fn default_width() -> u16 {
+const fn default_width() -> u16 {
   80
 }
 
-fn default_use_setsid() -> bool {
+const fn default_use_setsid() -> bool {
   true
 }
 
-fn default_kb_command() -> u8 {
+const fn default_kb_command() -> u8 {
   2
 }
 
-fn default_kb_sessions() -> u8 {
+const fn default_kb_sessions() -> u8 {
   3
 }
 
-fn default_kb_power() -> u8 {
+const fn default_kb_power() -> u8 {
   12
 }

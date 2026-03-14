@@ -1,4 +1,4 @@
-pub(crate) mod backend;
+pub mod backend;
 mod output;
 
 use std::{
@@ -42,7 +42,7 @@ struct _IntegrationRunner {
 
 impl Clone for IntegrationRunner {
   fn clone(&self) -> Self {
-    IntegrationRunner(Arc::clone(&self.0))
+    Self(Arc::clone(&self.0))
   }
 }
 
@@ -50,15 +50,15 @@ impl IntegrationRunner {
   pub async fn new(
     opts: SessionOptions,
     builder: Option<fn(&mut Greeter)>,
-  ) -> IntegrationRunner {
-    IntegrationRunner::new_with_size(opts, builder, (200, 40)).await
+  ) -> Self {
+    Self::new_with_size(opts, builder, (200, 40)).await
   }
 
   pub async fn new_with_size(
     opts: SessionOptions,
     builder: Option<fn(&mut Greeter)>,
     size: (u16, u16),
-  ) -> IntegrationRunner {
+  ) -> Self {
     let socket = NamedTempFile::new().unwrap().into_temp_path().to_path_buf();
 
     let (backend, buffer, tick) = TestBackend::new(size.0, size.1);
@@ -93,7 +93,7 @@ impl IntegrationRunner {
       let _ = crate::run(backend, greeter, events).await;
     });
 
-    IntegrationRunner(Arc::new(RwLock::new(_IntegrationRunner {
+    Self(Arc::new(RwLock::new(_IntegrationRunner {
       server: Some(server),
       client: Some(client),
       buffer,
@@ -113,7 +113,7 @@ impl IntegrationRunner {
 
     while !exited {
       tokio::select! {
-        _ = tokio::time::sleep(Duration::from_secs(5)) => break,
+        () = tokio::time::sleep(Duration::from_secs(5)) => break,
         _ = (&mut server) => {}
         _ = (&mut client) => { exited = true; },
         ret = (&mut events), if !events.is_finished() => rethrow(ret),
@@ -131,7 +131,7 @@ impl IntegrationRunner {
     };
 
     tokio::select! {
-      _ = tokio::time::sleep(Duration::from_secs(5)) => {},
+      () = tokio::time::sleep(Duration::from_secs(5)) => {},
       _ = server => {}
       _ = client => {},
       ret = events => rethrow(ret),
@@ -209,9 +209,8 @@ impl IntegrationRunner {
 }
 
 fn rethrow(result: Result<(), JoinError>) {
-  if let Err(err) = result {
-    if let Ok(panick) = err.try_into_panic() {
+  if let Err(err) = result
+    && let Ok(panick) = err.try_into_panic() {
       panic::resume_unwind(panick);
     }
-  }
 }

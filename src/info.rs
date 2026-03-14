@@ -300,7 +300,7 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
 
   let mut files = vec![];
 
-  for (path, session_type) in paths.iter() {
+  for (path, session_type) in paths {
     tracing::info!(
       "reading {:?} sessions from '{}'",
       session_type,
@@ -338,14 +338,14 @@ where
     .section(Some("Desktop Entry"))
     .ok_or("no Desktop Entry section in desktop file")?;
 
-  if let Some("true") = section.get("Hidden") {
+  if section.get("Hidden") == Some("true") {
     tracing::info!(
       "ignoring session in '{}': Hidden=true",
       path.as_ref().display()
     );
     return Ok(None);
   }
-  if let Some("true") = section.get("NoDisplay") {
+  if section.get("NoDisplay") == Some("true") {
     tracing::info!(
       "ignoring session in '{}': NoDisplay=true",
       path.as_ref().display()

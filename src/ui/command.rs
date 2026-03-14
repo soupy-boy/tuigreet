@@ -9,7 +9,7 @@ use tui::{
 use super::common::style::Themed;
 use crate::{
   Greeter,
-  ui::{Frame, prompt_value, util::*},
+  ui::{Frame, prompt_value, util::{get_rect_bounds, titleize, get_input_width, get_cursor_offset}},
 };
 
 pub fn draw_with_area(

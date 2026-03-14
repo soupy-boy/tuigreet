@@ -53,13 +53,14 @@ impl Theme {
   /// # Returns
   ///
   /// Theme with parsed colors, using fallbacks for unspecified elements
-  pub fn parse(spec: &str) -> Theme {
-    use Component::*;
+  #[must_use] 
+  pub fn parse(spec: &str) -> Self {
+    use Component::{Bg, Fg};
 
     let directives = spec
       .split(';')
       .filter_map(|directive| directive.split_once('='));
-    let mut style = Theme::default();
+    let mut style = Self::default();
 
     for (key, value) in directives {
       if let Ok(color) = Color::from_str(value) {
@@ -95,14 +96,15 @@ impl Theme {
     style
   }
 
+  #[must_use] 
   pub fn of(&self, targets: &[Themed]) -> Style {
     targets
       .iter()
       .fold(Style::default(), |style, target| self.apply(style, target))
   }
 
-  fn apply(&self, style: Style, target: &Themed) -> Style {
-    use Themed::*;
+  const fn apply(&self, style: Style, target: &Themed) -> Style {
+    use Themed::{Container, Time, Text, Border, Title, Greet, Prompt, Input, Action, ActionButton};
 
     let color = match target {
       Container => &self.container,

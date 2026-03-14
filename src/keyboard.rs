@@ -173,19 +173,19 @@ pub async fn handle(
     KeyEvent {
       code: KeyCode::Up, ..
     } => {
-      if let Mode::Users = greeter.mode
+      if greeter.mode == Mode::Users
         && greeter.users.selected > 0
       {
         greeter.users.selected -= 1;
       }
 
-      if let Mode::Sessions = greeter.mode
+      if greeter.mode == Mode::Sessions
         && greeter.sessions.selected > 0
       {
         greeter.sessions.selected -= 1;
       }
 
-      if let Mode::Power = greeter.mode
+      if greeter.mode == Mode::Power
         && greeter.powers.selected > 0
       {
         greeter.powers.selected -= 1;
@@ -197,19 +197,19 @@ pub async fn handle(
       code: KeyCode::Down,
       ..
     } => {
-      if let Mode::Users = greeter.mode
+      if greeter.mode == Mode::Users
         && greeter.users.selected < greeter.users.options.len() - 1
       {
         greeter.users.selected += 1;
       }
 
-      if let Mode::Sessions = greeter.mode
+      if greeter.mode == Mode::Sessions
         && greeter.sessions.selected < greeter.sessions.options.len() - 1
       {
         greeter.sessions.selected += 1;
       }
 
-      if let Mode::Power = greeter.mode
+      if greeter.mode == Mode::Power
         && greeter.powers.selected < greeter.powers.options.len() - 1
       {
         greeter.powers.selected += 1;
@@ -245,7 +245,7 @@ pub async fn handle(
     } => {
       match greeter.mode {
         Mode::Username if !greeter.username.value.is_empty() => {
-          validate_username(&mut greeter, &ipc).await
+          validate_username(&mut greeter, &ipc).await;
         },
         _ => {},
       }
@@ -258,7 +258,7 @@ pub async fn handle(
     } => {
       match greeter.mode {
         Mode::Username if !greeter.username.value.is_empty() => {
-          validate_username(&mut greeter, &ipc).await
+          validate_username(&mut greeter, &ipc).await;
         },
 
         Mode::Username if greeter.user_menu => {
@@ -402,7 +402,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Password => greeter.buffer = value,
     Mode::Command => greeter.buffer = value,
     _ => {},
-  };
+  }
 }
 
 // Handle deletion of characters from a prompt into the proper buffer, depending
@@ -437,9 +437,9 @@ async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
       Mode::Password => greeter.buffer = value,
       Mode::Command => greeter.buffer = value,
       _ => return,
-    };
+    }
 
-    if let KeyCode::Delete = key {
+    if key == KeyCode::Delete {
       greeter.cursor_offset += 1;
     }
   }
@@ -517,8 +517,8 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
-      assert_eq!(status.username.value, "".to_string());
+      assert!(matches!(result, Ok(())));
+      assert_eq!(status.username.value, String::new());
     }
 
     {
@@ -537,8 +537,8 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
-      assert_eq!(status.buffer, "".to_string());
+      assert!(matches!(result, Ok(())));
+      assert_eq!(status.buffer, String::new());
     }
 
     {
@@ -557,8 +557,8 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
-      assert_eq!(status.buffer, "".to_string());
+      assert!(matches!(result, Ok(())));
+      assert_eq!(status.buffer, String::new());
     }
   }
 
@@ -585,10 +585,10 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
+      assert!(matches!(result, Ok(())));
       assert_eq!(status.mode, Mode::Username);
       assert_eq!(status.buffer, "apognu".to_string());
-      assert!(matches!(status.previous_buffer, None));
+      assert!(status.previous_buffer.is_none());
       assert_eq!(status.cursor_offset, 0);
     }
 
@@ -609,7 +609,7 @@ mod test {
       {
         let status = greeter.read().await;
 
-        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result, Ok(())));
         assert_eq!(status.mode, Mode::Username);
       }
     }
@@ -629,7 +629,7 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
+      assert!(matches!(result, Ok(())));
       assert_eq!(status.cursor_offset, -1);
     }
 
@@ -649,7 +649,7 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
+      assert!(matches!(result, Ok(())));
       assert_eq!(status.cursor_offset, 1);
     }
   }
@@ -675,7 +675,7 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
+      assert!(matches!(result, Ok(())));
       assert_eq!(status.mode, Mode::Command);
       assert_eq!(status.previous_buffer, Some("apognu".to_string()));
       assert_eq!(status.buffer, "thecommand".to_string());
@@ -698,7 +698,7 @@ mod test {
       {
         let status = greeter.read().await;
 
-        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result, Ok(())));
         assert_eq!(status.mode, Mode::Command);
         assert_eq!(status.previous_mode, Mode::Username);
       }
@@ -729,7 +729,7 @@ mod test {
       {
         let status = greeter.read().await;
 
-        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result, Ok(())));
         assert_eq!(status.mode, mode);
         assert_eq!(status.buffer, "apognu".to_string());
       }
@@ -751,7 +751,7 @@ mod test {
         {
           let status = greeter.read().await;
 
-          assert!(matches!(result, Ok(_)));
+          assert!(matches!(result, Ok(())));
           assert_eq!(status.mode, Mode::Command);
           assert_eq!(status.previous_mode, Mode::Username);
         }
@@ -786,7 +786,7 @@ mod test {
       {
         let status = greeter.read().await;
 
-        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result, Ok(())));
         assert_eq!(status.mode, mode);
         assert_eq!(status.buffer, "apognu".to_string());
       }
@@ -808,7 +808,7 @@ mod test {
         {
           let status = greeter.read().await;
 
-          assert!(matches!(result, Ok(_)));
+          assert!(matches!(result, Ok(())));
           assert_eq!(status.mode, Mode::Command);
           assert_eq!(status.previous_mode, Mode::Username);
         }
@@ -836,7 +836,7 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
+      assert!(matches!(result, Ok(())));
       assert_eq!(status.cursor_offset, -9);
     }
 
@@ -850,7 +850,7 @@ mod test {
     {
       let status = greeter.read().await;
 
-      assert!(matches!(result, Ok(_)));
+      assert!(matches!(result, Ok(())));
       assert_eq!(status.cursor_offset, 0);
     }
   }

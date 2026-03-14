@@ -12,7 +12,7 @@ use super::common::style::Themed;
 use crate::{
   Greeter,
   info::get_hostname,
-  ui::{Frame, prompt_value, util::*},
+  ui::{Frame, prompt_value, util::{get_rect_bounds, titleize, get_message_height, get_greeting_height, get_input_width, get_cursor_offset}},
 };
 
 const GREETING_INDEX: usize = 0;
@@ -77,7 +77,7 @@ pub fn draw_with_area(
     } else {
       0
     }), // Prompt padding
-    Constraint::Length(if should_display_answer { 1 } else { 0 }), // Answer
+    Constraint::Length(u16::from(should_display_answer)), // Answer
   ];
 
   let chunks = Layout::default()

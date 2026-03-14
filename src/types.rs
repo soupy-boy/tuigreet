@@ -25,14 +25,14 @@ pub enum AuthStatus {
 
 impl Display for AuthStatus {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{:?}", self)
+    write!(f, "{self:?}")
   }
 }
 
 impl Error for AuthStatus {}
 
 /// UI mode determining which input/menu is displayed
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum Mode {
   /// Username input field
   #[default]
@@ -72,10 +72,11 @@ pub enum SecretDisplay {
 
 impl SecretDisplay {
   /// Returns true if secrets should be shown (as replacement characters)
-  pub fn show(&self) -> bool {
+  #[must_use] 
+  pub const fn show(&self) -> bool {
     match self {
-      SecretDisplay::Hidden => false,
-      SecretDisplay::Character(_) => true,
+      Self::Hidden => false,
+      Self::Character(_) => true,
     }
   }
 }

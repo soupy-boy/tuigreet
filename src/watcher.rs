@@ -39,7 +39,7 @@ impl ConfigWatcher {
   /// * `event_sender` - Channel to send UI refresh events
   ///
   /// # Returns
-  /// ConfigWatcher that monitors the config file for changes
+  /// `ConfigWatcher` that monitors the config file for changes
   ///
   /// # Errors
   /// Returns error if file watcher cannot be initialized
@@ -134,7 +134,7 @@ impl ConfigWatcher {
       }
     });
 
-    Ok(ConfigWatcher { watcher })
+    Ok(Self { watcher })
   }
 
   fn is_config_event(event: &Event, config_path: &Path) -> bool {
@@ -161,7 +161,7 @@ impl ConfigWatcher {
       },
       Err(e) => {
         return Err(
-          format!("Config validation failed after reload: {}", e).into(),
+          format!("Config validation failed after reload: {e}").into(),
         );
       },
     }

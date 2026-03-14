@@ -8,7 +8,7 @@ use tui::{
 
 use crate::{
   Greeter,
-  ui::{Frame, util::*},
+  ui::{Frame, util::get_height},
 };
 
 pub fn draw_with_area(

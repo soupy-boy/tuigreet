@@ -9,6 +9,7 @@ use crate::{config::schema::ThemeConfig, theme::Theme};
 /// # Returns
 ///
 /// Theme with colors specified in config, defaulting unspecified elements
+#[must_use] 
 pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
   let mut theme = Theme::default();
 
@@ -16,34 +17,34 @@ pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
   let mut spec_parts = Vec::new();
 
   if let Some(ref color) = theme_config.border {
-    spec_parts.push(format!("border={}", color));
+    spec_parts.push(format!("border={color}"));
   }
   if let Some(ref color) = theme_config.text {
-    spec_parts.push(format!("text={}", color));
+    spec_parts.push(format!("text={color}"));
   }
   if let Some(ref color) = theme_config.time {
-    spec_parts.push(format!("time={}", color));
+    spec_parts.push(format!("time={color}"));
   }
   if let Some(ref color) = theme_config.container {
-    spec_parts.push(format!("container={}", color));
+    spec_parts.push(format!("container={color}"));
   }
   if let Some(ref color) = theme_config.title {
-    spec_parts.push(format!("title={}", color));
+    spec_parts.push(format!("title={color}"));
   }
   if let Some(ref color) = theme_config.greet {
-    spec_parts.push(format!("greet={}", color));
+    spec_parts.push(format!("greet={color}"));
   }
   if let Some(ref color) = theme_config.prompt {
-    spec_parts.push(format!("prompt={}", color));
+    spec_parts.push(format!("prompt={color}"));
   }
   if let Some(ref color) = theme_config.input {
-    spec_parts.push(format!("input={}", color));
+    spec_parts.push(format!("input={color}"));
   }
   if let Some(ref color) = theme_config.action {
-    spec_parts.push(format!("action={}", color));
+    spec_parts.push(format!("action={color}"));
   }
   if let Some(ref color) = theme_config.button {
-    spec_parts.push(format!("button={}", color));
+    spec_parts.push(format!("button={color}"));
   }
 
   if !spec_parts.is_empty() {
@@ -67,6 +68,7 @@ pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
 /// # Returns
 ///
 /// CLI theme if specified, otherwise base theme
+#[must_use] 
 pub fn apply_cli_theme(
   mut base_theme: Theme,
   cli_theme_spec: Option<&str>,

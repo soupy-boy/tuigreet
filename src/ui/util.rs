@@ -128,7 +128,7 @@ pub fn get_input_width(
   width - label_width as u16 - 4 - 1
 }
 
-pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
+pub const fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   let mut offset = length as i16 + greeter.cursor_offset;
 
   if offset < 0 {

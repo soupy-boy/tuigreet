@@ -33,7 +33,7 @@ pub enum ConfigError {
   /// Option that depends on another option
   Dependency(String),
 
-  /// Invalid range (e.g., min_uid >= max_uid)
+  /// Invalid range (e.g., `min_uid` >= `max_uid`)
   InvalidRange(String),
 
   /// Duplicate keybindings
@@ -52,46 +52,44 @@ pub enum ConfigError {
 impl fmt::Display for ConfigError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      ConfigError::Io(err) => write!(f, "I/O error: {}", err),
-      ConfigError::Parse(err) => write!(f, "TOML parse error: {}", err),
-      ConfigError::ParseWithContext {
+      Self::Io(err) => write!(f, "I/O error: {err}"),
+      Self::Parse(err) => write!(f, "TOML parse error: {err}"),
+      Self::ParseWithContext {
         file,
         line,
         column,
         context,
         original_message,
       } => {
-        writeln!(f, "TOML parse error: {}", original_message)?;
+        writeln!(f, "TOML parse error: {original_message}")?;
         writeln!(f, "File: {}", file.display())?;
-        writeln!(f, "Line: {}, Column: {}", line, column)?;
+        writeln!(f, "Line: {line}, Column: {column}")?;
         writeln!(f)?;
         for line in context {
-          writeln!(f, "{}", line)?;
+          writeln!(f, "{line}")?;
         }
         Ok(())
       },
-      ConfigError::Validation(msg) => write!(f, "Validation error: {}", msg),
-      ConfigError::MutuallyExclusive(opt1, opt2) => {
+      Self::Validation(msg) => write!(f, "Validation error: {msg}"),
+      Self::MutuallyExclusive(opt1, opt2) => {
         write!(
           f,
-          "Options '{}' and '{}' are mutually exclusive",
-          opt1, opt2
+          "Options '{opt1}' and '{opt2}' are mutually exclusive"
         )
       },
-      ConfigError::Dependency(msg) => write!(f, "Dependency error: {}", msg),
-      ConfigError::InvalidRange(msg) => write!(f, "Invalid range: {}", msg),
-      ConfigError::DuplicateKeybindings => {
+      Self::Dependency(msg) => write!(f, "Dependency error: {msg}"),
+      Self::InvalidRange(msg) => write!(f, "Invalid range: {msg}"),
+      Self::DuplicateKeybindings => {
         write!(f, "Duplicate keybindings detected")
       },
-      ConfigError::InvalidFKey(name, key) => {
+      Self::InvalidFKey(name, key) => {
         write!(
           f,
-          "Invalid F-key value for '{}': F{} (must be F1-F12)",
-          name, key
+          "Invalid F-key value for '{name}': F{key} (must be F1-F12)"
         )
       },
-      ConfigError::InvalidTimeFormat => write!(f, "Invalid time format string"),
-      ConfigError::WrapperExecutableNotFound(path) => {
+      Self::InvalidTimeFormat => write!(f, "Invalid time format string"),
+      Self::WrapperExecutableNotFound(path) => {
         write!(
           f,
           "Session wrapper executable not found: {}",
@@ -106,12 +104,12 @@ impl std::error::Error for ConfigError {}
 
 impl From<io::Error> for ConfigError {
   fn from(err: io::Error) -> Self {
-    ConfigError::Io(err)
+    Self::Io(err)
   }
 }
 
 impl From<toml::de::Error> for ConfigError {
   fn from(err: toml::de::Error) -> Self {
-    ConfigError::Parse(err)
+    Self::Parse(err)
   }
 }

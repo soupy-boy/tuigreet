@@ -83,7 +83,7 @@ async fn show_time() {
     mfa:      false,
   };
 
-  let tref = Local::now().format(&TIME_FORMAT).to_string();
+  let tref = Local::now().format(TIME_FORMAT).to_string();
 
   let mut runner = IntegrationRunner::new(
     opts,
@@ -106,7 +106,7 @@ async fn show_time() {
 
       runner.wait_for_render().await;
 
-      assert_eq!(runner.output().await.contains(&tref), false);
+      assert!(!runner.output().await.contains(&tref));
     }
   });
 

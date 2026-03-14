@@ -15,7 +15,7 @@ use tuigreet::config::{OutputConfig, TerminalConfig};
 /// These are Linux-specific and only compiled outside the test harness to avoid
 /// needing a libc dependency.
 #[cfg(not(test))]
-pub(crate) mod ffi {
+pub mod ffi {
   use std::ffi::{c_int, c_ulong, c_void};
 
   /// `ioctl(TIOCGWINSZ, ...)` request code (Linux, most architectures).
@@ -76,7 +76,7 @@ pub fn enumerate_outputs() -> Vec<DrmOutput> {
 
 /// Inner implementation of [`enumerate_outputs`] that accepts an arbitrary
 /// sysfs DRM root path, allowing unit tests to use a temporary directory.
-pub(crate) fn enumerate_outputs_from(
+pub fn enumerate_outputs_from(
   drm_path: &std::path::Path,
 ) -> Vec<DrmOutput> {
   let mut outputs = Vec::new();
@@ -134,7 +134,7 @@ pub(crate) fn enumerate_outputs_from(
 }
 
 /// Parse a resolution string of the form `"WIDTHxHEIGHT"` into `(u16, u16)`.
-pub(crate) fn parse_resolution(mode: &str) -> Option<(u16, u16)> {
+pub fn parse_resolution(mode: &str) -> Option<(u16, u16)> {
   let mode = mode.trim();
   let (w_str, h_str) = mode.split_once('x')?;
   let w = w_str.trim().parse().ok()?;
@@ -173,7 +173,7 @@ pub fn list_outputs() -> ! {
     };
     let resolution = output
       .native_resolution
-      .map(|(w, h)| format!("{}x{}", w, h))
+      .map(|(w, h)| format!("{w}x{h}"))
       .unwrap_or_default();
 
     println!("  {:<16} {:<14} {}", output.connector, status, resolution);
@@ -346,7 +346,7 @@ fn apply_winsize(rows: u16, cols: u16, xpixel: u16, ypixel: u16) {
       ws_ypixel: ypixel,
     };
     // SAFETY: `tty` is a valid open fd; `TIOCSWINSZ` expects a `*mut WinSize`.
-    let ret = ioctl(fd, TIOCSWINSZ, &mut ws as *mut WinSize as *mut _);
+    let ret = ioctl(fd, TIOCSWINSZ, (&raw mut ws).cast());
     if ret != 0 {
       tracing::warn!("TIOCSWINSZ failed: {}", std::io::Error::last_os_error());
     }
@@ -369,7 +369,7 @@ fn get_winsize(fd: i32) -> Option<(u16, u16, u16, u16)> {
     };
     // SAFETY: `fd` is a valid terminal fd; `TIOCGWINSZ` expects a `*mut
     // WinSize`.
-    let ret = ioctl(fd, TIOCGWINSZ, &mut ws as *mut WinSize as *mut _);
+    let ret = ioctl(fd, TIOCGWINSZ, (&raw mut ws).cast());
     if ret == 0 {
       Some((ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel))
     } else {

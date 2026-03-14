@@ -38,7 +38,7 @@ pub struct Events {
 
 impl Events {
   /// Create a new event stream with keyboard and render events.
-  pub async fn new() -> Events {
+  pub async fn new() -> Self {
     let (tx, rx) = mpsc::channel(10);
 
     tokio::task::spawn({
@@ -74,7 +74,7 @@ impl Events {
       }
     });
 
-    Events { rx, tx }
+    Self { rx, tx }
   }
 
   /// Get the next event from the stream.

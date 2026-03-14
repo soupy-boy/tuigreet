@@ -11,8 +11,8 @@ pub struct MaskedString {
 
 impl MaskedString {
   /// Create a new masked string.
-  pub fn from(value: String, mask: Option<String>) -> MaskedString {
-    MaskedString { value, mask }
+  pub const fn from(value: String, mask: Option<String>) -> Self {
+    Self { value, mask }
   }
 
   /// Get the display value (mask if present, otherwise actual value).

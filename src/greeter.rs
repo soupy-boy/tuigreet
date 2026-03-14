@@ -223,7 +223,7 @@ impl Greeter {
 
       if let Err(err) = greeter.parse_options(&args).await {
         eprintln!("{err}");
-        print_usage(Greeter::options());
+        print_usage(Self::options());
 
         process::exit(1);
       }
@@ -277,7 +277,7 @@ impl Greeter {
                     .unwrap_or_else(|_| {
                       "# Failed to serialize config".to_string()
                     });
-                  println!("{}", toml_str);
+                  println!("{toml_str}");
                   process::exit(0);
                 }
               },
@@ -302,7 +302,7 @@ impl Greeter {
 
     let sessions = get_sessions(&greeter).unwrap_or_default();
 
-    if let SessionSource::None = greeter.session_source
+    if matches!(greeter.session_source, SessionSource::None)
       && !sessions.is_empty()
     {
       greeter.session_source = SessionSource::Session(0);
@@ -406,12 +406,9 @@ impl Greeter {
   pub async fn connect(&mut self) {
     // If socket is not already set (by tests), read from environment
     if self.socket.is_empty() {
-      self.socket = match env::var("GREETD_SOCK") {
-        Ok(socket) => socket,
-        Err(_) => {
-          eprintln!("GREETD_SOCK must be defined");
-          process::exit(1);
-        },
+      self.socket = if let Ok(socket) = env::var("GREETD_SOCK") { socket } else {
+        eprintln!("GREETD_SOCK must be defined");
+        process::exit(1);
       };
     }
 
@@ -427,7 +424,8 @@ impl Greeter {
     }
   }
 
-  pub fn config(&self) -> &Matches {
+  #[must_use] 
+  pub const fn config(&self) -> &Matches {
     self
       .config
       .as_ref()
@@ -443,19 +441,19 @@ impl Greeter {
       .await
   }
 
+  #[must_use] 
   pub fn option(&self, name: &str) -> Option<String> {
     self.config().opt_str(name)
   }
 
+  #[must_use] 
   pub fn options_multi(&self, name: &str) -> Option<Vec<String>> {
-    match self.config().opt_present(name) {
-      true => Some(self.config().opt_strs(name)),
-      false => None,
-    }
+    if self.config().opt_present(name) { Some(self.config().opt_strs(name)) } else { None }
   }
 
   // Returns the width of the main window where content is displayed from the
   // provided arguments.
+  #[must_use] 
   pub fn width(&self) -> u16 {
     if let Some(value) = self.option("width")
       && let Ok(width) = value.parse::<u16>()
@@ -471,6 +469,7 @@ impl Greeter {
   }
 
   // Returns the padding of the screen from the provided arguments.
+  #[must_use] 
   pub fn window_padding(&self) -> u16 {
     // Check CLI override first
     if let Some(value) = self.option("window-padding")
@@ -491,6 +490,7 @@ impl Greeter {
 
   // Returns the padding of the main window where content is displayed from the
   // provided arguments.
+  #[must_use] 
   pub fn container_padding(&self) -> u16 {
     // Check CLI override first
     if let Some(value) = self.option("container-padding")
@@ -510,6 +510,7 @@ impl Greeter {
   }
 
   // Returns the spacing between each prompt from the provided arguments.
+  #[must_use] 
   pub fn prompt_padding(&self) -> u16 {
     // Check CLI override first
     if let Some(value) = self.option("prompt-padding")
@@ -528,6 +529,7 @@ impl Greeter {
     1
   }
 
+  #[must_use] 
   pub fn greet_align(&self) -> GreetAlign {
     if let Some(value) = self.option("greet-align") {
       return match value.as_str() {
@@ -565,6 +567,7 @@ impl Greeter {
     }
   }
 
+  #[must_use] 
   pub fn options() -> Options {
     let mut opts = Options::new();
 
@@ -751,7 +754,7 @@ impl Greeter {
   where
     S: AsRef<OsStr>,
   {
-    let opts = Greeter::options();
+    let opts = Self::options();
 
     self.config = match opts.parse(args) {
       Ok(matches) => Some(matches),
@@ -775,7 +778,7 @@ impl Greeter {
       self.debug = true;
 
       self.logfile = match self.config().opt_str("debug") {
-        Some(file) => file.to_string(),
+        Some(file) => file,
         None => DEFAULT_LOG_FILE.to_string(),
       }
     }
@@ -941,18 +944,15 @@ impl Greeter {
     self.kb_command = self
       .config()
       .opt_str("kb-command")
-      .map(|i| i.parse::<u8>().unwrap_or_default())
-      .unwrap_or(2);
+      .map_or(2, |i| i.parse::<u8>().unwrap_or_default());
     self.kb_sessions = self
       .config()
       .opt_str("kb-sessions")
-      .map(|i| i.parse::<u8>().unwrap_or_default())
-      .unwrap_or(3);
+      .map_or(3, |i| i.parse::<u8>().unwrap_or_default());
     self.kb_power = self
       .config()
       .opt_str("kb-power")
-      .map(|i| i.parse::<u8>().unwrap_or_default())
-      .unwrap_or(12);
+      .map_or(12, |i| i.parse::<u8>().unwrap_or_default());
 
     if self.kb_command == self.kb_sessions
       || self.kb_sessions == self.kb_power
@@ -977,6 +977,7 @@ impl Greeter {
   }
 
   // Computes the size of the prompt to help determine where input should start.
+  #[must_use] 
   pub fn prompt_width(&self) -> usize {
     match &self.prompt {
       None => 0,
@@ -1044,7 +1045,7 @@ impl Greeter {
       SecretMode::Hidden => self.secret_display = SecretDisplay::Hidden,
       SecretMode::Characters => {
         self.secret_display =
-          SecretDisplay::Character(config.secret.characters.clone())
+          SecretDisplay::Character(config.secret.characters.clone());
       },
     }
     // Keybindings
@@ -1181,7 +1182,7 @@ mod test {
           assert_eq!(greeter.prompt_padding(), 0);
           assert_eq!(greeter.window_padding(), 1);
           assert_eq!(greeter.container_padding(), 13);
-          assert_eq!(greeter.user_menu, true);
+          assert!(greeter.user_menu);
           assert!(matches!(
             greeter.xsession_wrapper.as_deref(),
             Some("startx")
@@ -1202,7 +1203,7 @@ mod test {
         &["--no-xsession-wrapper"],
         true,
         Some(|greeter| {
-          assert!(matches!(greeter.xsession_wrapper, None));
+          assert!(greeter.xsession_wrapper.is_none());
         }),
       ),
       // Invalid combinations
@@ -1227,16 +1228,15 @@ mod test {
       match valid {
         true => {
           assert!(
-            matches!(greeter.parse_options(*opts).await, Ok(())),
-            "{:?} cannot be parsed",
-            opts
+            matches!(greeter.parse_options(opts).await, Ok(())),
+            "{opts:?} cannot be parsed"
           );
 
           if let Some(check) = check {
             check(&greeter);
           }
         },
-        false => assert!(matches!(greeter.parse_options(*opts).await, Err(_))),
+        false => assert!((greeter.parse_options(opts).await).is_err()),
       }
     }
   }

@@ -33,17 +33,17 @@ use crate::{
 pub struct Ipc(Arc<IpcHandle>);
 
 /// Internal IPC channel handle.
-pub(crate) struct IpcHandle {
+pub struct IpcHandle {
   tx: RwLock<Sender<Request>>,
   rx: Mutex<Receiver<Request>>,
 }
 
 impl Ipc {
   /// Create a new IPC client.
-  pub fn new() -> Ipc {
+  pub fn new() -> Self {
     let (tx, rx) = tokio::sync::mpsc::channel::<Request>(10);
 
-    Ipc(Arc::new(IpcHandle {
+    Self(Arc::new(IpcHandle {
       tx: RwLock::new(tx),
       rx: Mutex::new(rx),
     }))
@@ -111,7 +111,7 @@ impl Ipc {
     // information, sometimes passwords.
     match response {
       Response::Error { ref error_type, .. } => {
-        tracing::info!("received greetd error message: {error_type:?}")
+        tracing::info!("received greetd error message: {error_type:?}");
       },
       ref response => tracing::info!("received greetd message: {:?}", response),
     }
@@ -213,14 +213,14 @@ impl Ipc {
 
           match greeter.session_source.command(greeter).map(str::to_string) {
             None => {
-              Ipc::cancel(greeter).await;
+              Self::cancel(greeter).await;
 
               greeter.message = Some(fl!("command_missing"));
               greeter.reset(false).await;
             },
 
             Some(command) if command.is_empty() => {
-              Ipc::cancel(greeter).await;
+              Self::cancel(greeter).await;
 
               greeter.message = Some(fl!("command_missing"));
               greeter.reset(false).await;
@@ -265,7 +265,7 @@ impl Ipc {
         // entered information, sometimes passwords.
         tracing::info!("received an error from greetd: {error_type:?}");
 
-        Ipc::cancel(greeter).await;
+        Self::cancel(greeter).await;
 
         match error_type {
           ErrorType::AuthError => {
@@ -308,11 +308,11 @@ fn desktop_names_to_xdg(names: &str) -> String {
 struct DefaultCommand<'a>(&'a str, Option<Vec<String>>);
 
 impl<'a> DefaultCommand<'a> {
-  fn command(&'a self) -> &'a str {
+  const fn command(&'a self) -> &'a str {
     self.0
   }
 
-  fn env(&'a self) -> Option<&'a Vec<String>> {
+  const fn env(&'a self) -> Option<&'a Vec<String>> {
     self.1.as_ref()
   }
 }

@@ -31,10 +31,10 @@ impl SessionSource {
     greeter: &'g Greeter,
   ) -> Option<&'g str> {
     match self {
-      SessionSource::None => None,
-      SessionSource::DefaultCommand(command, _) => Some(command),
-      SessionSource::Command(command) => Some(command),
-      SessionSource::Session(index) => {
+      Self::None => None,
+      Self::DefaultCommand(command, _) => Some(command),
+      Self::Command(command) => Some(command),
+      Self::Session(index) => {
         greeter
           .sessions
           .options
@@ -51,10 +51,10 @@ impl SessionSource {
     greeter: &'g Greeter,
   ) -> Option<&'g str> {
     match self {
-      SessionSource::None => None,
-      SessionSource::DefaultCommand(command, _) => Some(command.as_str()),
-      SessionSource::Command(command) => Some(command.as_str()),
-      SessionSource::Session(index) => {
+      Self::None => None,
+      Self::DefaultCommand(command, _) => Some(command.as_str()),
+      Self::Command(command) => Some(command.as_str()),
+      Self::Session(index) => {
         greeter
           .sessions
           .options
@@ -66,16 +66,16 @@ impl SessionSource {
 
   pub fn env<'g, 'ss: 'g>(&'ss self) -> Option<Vec<String>> {
     match self {
-      SessionSource::None => None,
-      SessionSource::DefaultCommand(_, env) => env.clone(),
-      SessionSource::Command(_) => None,
-      SessionSource::Session(_) => None,
+      Self::None => None,
+      Self::DefaultCommand(_, env) => env.clone(),
+      Self::Command(_) => None,
+      Self::Session(_) => None,
     }
   }
 }
 
 // Represents the XDG type of the selected session.
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum SessionType {
   X11,
   Wayland,
@@ -87,12 +87,12 @@ pub enum SessionType {
 impl SessionType {
   // Returns the value that should be set in `XDG_SESSION_TYPE` when the session
   // is started.
-  pub fn as_xdg_session_type(&self) -> &'static str {
+  pub const fn as_xdg_session_type(&self) -> &'static str {
     match self {
-      SessionType::X11 => "x11",
-      SessionType::Wayland => "wayland",
-      SessionType::Tty => "tty",
-      SessionType::None => "unspecified",
+      Self::X11 => "x11",
+      Self::Wayland => "wayland",
+      Self::Tty => "tty",
+      Self::None => "unspecified",
     }
   }
 }
@@ -133,7 +133,7 @@ impl Session {
   //
   // If the path maps to a valid session file, will return the associated
   // session. Otherwise, will return `None`.
-  pub fn from_path<P>(greeter: &Greeter, path: P) -> Option<&Session>
+  pub fn from_path<P>(greeter: &Greeter, path: P) -> Option<&Self>
   where
     P: AsRef<Path>,
   {
@@ -148,7 +148,7 @@ impl Session {
   //
   // Note that this does not indicate which menu item is "highlighted", but the
   // session that was selected.
-  pub fn get_selected(greeter: &Greeter) -> Option<&Session> {
+  pub fn get_selected(greeter: &Greeter) -> Option<&Self> {
     match greeter.session_source {
       SessionSource::Session(index) => greeter.sessions.options.get(index),
       _ => None,
