@@ -394,7 +394,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
   let left = value.chars().take(index);
   let right = value.chars().skip(index);
 
-  let value = left.chain(vec![c].into_iter()).chain(right).collect();
+  let value = left.chain(std::iter::once(c)).chain(right).collect();
   let mode = greeter.mode;
 
   match mode {

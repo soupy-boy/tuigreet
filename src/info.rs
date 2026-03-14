@@ -133,34 +133,22 @@ pub fn get_issue() -> Option<String> {
   None
 }
 
-pub fn get_last_user_username() -> Option<String> {
-  match fs::read_to_string(LAST_USER_USERNAME).ok() {
-    None => None,
-    Some(username) => {
-      let username = username.trim();
-
-      if username.is_empty() {
-        None
-      } else {
-        Some(username.to_string())
-      }
-    },
+fn read_trimmed_file(path: &str) -> Option<String> {
+  let contents = fs::read_to_string(path).ok()?;
+  let trimmed = contents.trim();
+  if trimmed.is_empty() {
+    None
+  } else {
+    Some(trimmed.to_string())
   }
 }
 
-pub fn get_last_user_name() -> Option<String> {
-  match fs::read_to_string(LAST_USER_NAME).ok() {
-    None => None,
-    Some(name) => {
-      let name = name.trim();
+pub fn get_last_user_username() -> Option<String> {
+  read_trimmed_file(LAST_USER_USERNAME)
+}
 
-      if name.is_empty() {
-        None
-      } else {
-        Some(name.to_string())
-      }
-    },
-  }
+pub fn get_last_user_name() -> Option<String> {
+  read_trimmed_file(LAST_USER_NAME)
 }
 
 pub fn write_last_username(username: &MaskedString) {
@@ -240,7 +228,7 @@ pub fn delete_last_user_command(username: &str) {
 pub fn get_users(min_uid: u32, max_uid: u32) -> Vec<User> {
   let users = unsafe { uzers::all_users() };
 
-  let users: Vec<User> = users
+  users
     .filter(|user| user.uid() >= min_uid && user.uid() <= max_uid)
     .map(|user| {
       User {
@@ -258,9 +246,7 @@ pub fn get_users(min_uid: u32, max_uid: u32) -> Vec<User> {
         },
       }
     })
-    .collect();
-
-  users
+    .collect()
 }
 
 pub fn get_min_max_uids(

@@ -428,11 +428,19 @@ impl Greeter {
   }
 
   pub fn config(&self) -> &Matches {
-    self.config.as_ref().unwrap()
+    self
+      .config
+      .as_ref()
+      .expect("config accessed before parse_options")
   }
 
   pub async fn stream(&self) -> RwLockWriteGuard<'_, UnixStream> {
-    self.stream.as_ref().unwrap().write().await
+    self
+      .stream
+      .as_ref()
+      .expect("stream accessed before connect")
+      .write()
+      .await
   }
 
   pub fn option(&self, name: &str) -> Option<String> {
@@ -902,8 +910,8 @@ impl Greeter {
         .extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::X11)));
     }
 
-    if self.option("session-wrapper").is_some() {
-      self.session_wrapper = self.option("session-wrapper");
+    if let Some(wrapper) = self.option("session-wrapper") {
+      self.session_wrapper = Some(wrapper);
     }
 
     if !self.config().opt_present("no-xsession-wrapper") {
