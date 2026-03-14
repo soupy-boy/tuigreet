@@ -7,7 +7,11 @@ use std::{
 use dirs::config_dir;
 
 use crate::config::{
-  AlignGreeting, Config, ConfigError, SecretMode, env::load_env_variables,
+  AlignGreeting,
+  Config,
+  ConfigError,
+  SecretMode,
+  env::load_env_variables,
 };
 
 /// Load configuration from CLI path, user config, or system config.
@@ -53,7 +57,8 @@ pub fn load_config(
   Ok(config)
 }
 
-/// Overwrites dest with src. Used for layering: defaults -> system -> user -> env -> CLI
+/// Overwrites dest with src. Used for layering: defaults -> system -> user ->
+/// env -> CLI
 fn apply_config_layer(dest: &mut Config, src: Config) {
   dest.general = src.general;
   dest.session = src.session;
@@ -127,10 +132,10 @@ fn toml_error(
 
     // Return error w/ context
     return ConfigError::ParseWithContext {
-      file: path.to_path_buf(),
-      line: line_num + 1,
-      column: col_num + 1,
-      context: context_lines,
+      file:             path.to_path_buf(),
+      line:             line_num + 1,
+      column:           col_num + 1,
+      context:          context_lines,
       original_message: original_error.message().to_string(),
     };
   }

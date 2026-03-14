@@ -517,10 +517,10 @@ mod tests {
     assert_eq!(config.theme.container, Some("green".to_string()));
 
     // Verify other env vars applied correctly (once, not per-component)
-    assert_eq!(
-      config.session.sessions_dirs,
-      vec!["/test".to_string(), "/usr/share".to_string()]
-    );
+    assert_eq!(config.session.sessions_dirs, vec![
+      "/test".to_string(),
+      "/usr/share".to_string()
+    ]);
     assert_eq!(config.display.align_greeting, AlignGreeting::Center);
 
     unsafe {

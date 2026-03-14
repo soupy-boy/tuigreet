@@ -5,7 +5,11 @@ use std::{
 };
 
 use notify::{
-  Config as NotifyConfig, Event, EventKind, RecommendedWatcher, RecursiveMode,
+  Config as NotifyConfig,
+  Event,
+  EventKind,
+  RecommendedWatcher,
+  RecursiveMode,
   Watcher,
 };
 use tokio::sync::{RwLock, mpsc};

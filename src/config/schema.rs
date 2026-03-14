@@ -137,7 +137,7 @@ pub struct GeneralConfig {
 impl Default for GeneralConfig {
   fn default() -> Self {
     Self {
-      debug: false,
+      debug:    false,
       log_file: default_log_file(),
     }
   }
@@ -174,12 +174,12 @@ pub struct SessionConfig {
 impl Default for SessionConfig {
   fn default() -> Self {
     Self {
-      command: None,
-      sessions_dirs: default_sessions_dirs(),
-      xsessions_dirs: default_xsessions_dirs(),
-      session_wrapper: None,
+      command:          None,
+      sessions_dirs:    default_sessions_dirs(),
+      xsessions_dirs:   default_xsessions_dirs(),
+      session_wrapper:  None,
       xsession_wrapper: default_xsession_wrapper(),
-      environments: Vec::new(),
+      environments:     Vec::new(),
     }
   }
 }
@@ -273,7 +273,7 @@ pub struct SecretConfig {
 impl Default for SecretConfig {
   fn default() -> Self {
     Self {
-      mode: SecretMode::Hidden,
+      mode:       SecretMode::Hidden,
       characters: default_secret_characters(),
     }
   }
@@ -306,11 +306,11 @@ pub struct LayoutConfig {
 impl Default for LayoutConfig {
   fn default() -> Self {
     Self {
-      width: default_width(),
-      window_padding: None,
+      width:             default_width(),
+      window_padding:    None,
       container_padding: None,
-      prompt_padding: None,
-      widgets: WidgetConfig::default(),
+      prompt_padding:    None,
+      widgets:           WidgetConfig::default(),
     }
   }
 }
@@ -346,8 +346,8 @@ pub struct PowerConfig {
 impl Default for PowerConfig {
   fn default() -> Self {
     Self {
-      shutdown: None,
-      reboot: None,
+      shutdown:   None,
+      reboot:     None,
       use_setsid: default_use_setsid(),
     }
   }
@@ -372,9 +372,9 @@ pub struct KeybindingsConfig {
 impl Default for KeybindingsConfig {
   fn default() -> Self {
     Self {
-      command: default_kb_command(),
+      command:  default_kb_command(),
       sessions: default_kb_sessions(),
-      power: default_kb_power(),
+      power:    default_kb_power(),
     }
   }
 }
@@ -384,34 +384,34 @@ impl Default for KeybindingsConfig {
 pub struct ThemeConfig {
   /// Border color
   #[serde(default)]
-  pub border: Option<String>,
+  pub border:    Option<String>,
   /// Base text color
   #[serde(default)]
-  pub text: Option<String>,
+  pub text:      Option<String>,
   /// Time display color
   #[serde(default)]
-  pub time: Option<String>,
+  pub time:      Option<String>,
   /// Container background color
   #[serde(default)]
   pub container: Option<String>,
   /// Container title color
   #[serde(default)]
-  pub title: Option<String>,
+  pub title:     Option<String>,
   /// Greeting text color
   #[serde(default)]
-  pub greet: Option<String>,
+  pub greet:     Option<String>,
   /// Prompt text color
   #[serde(default)]
-  pub prompt: Option<String>,
+  pub prompt:    Option<String>,
   /// User input color
   #[serde(default)]
-  pub input: Option<String>,
+  pub input:     Option<String>,
   /// Action text color
   #[serde(default)]
-  pub action: Option<String>,
+  pub action:    Option<String>,
   /// Action button color
   #[serde(default)]
-  pub button: Option<String>,
+  pub button:    Option<String>,
 }
 
 /// Greeting alignment options
