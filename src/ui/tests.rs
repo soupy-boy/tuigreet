@@ -550,9 +550,9 @@ async fn test_theme_greeting_color_applied() {
   {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
-    g.greeting = Some("Welcome to the system!".to_string());
 
     let mut config = Config::default();
+    config.display.greeting = Some("Welcome to the system!".to_string());
     config.theme.greet = Some("green".to_string());
 
     g.loaded_config = Some(config.clone());
@@ -638,9 +638,9 @@ async fn test_theme_multiple_colors_applied() {
   {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
-    g.greeting = Some("Test".to_string());
 
     let mut config = Config::default();
+    config.display.greeting = Some("Test".to_string());
     config.theme.border = Some("red".to_string());
     config.theme.text = Some("cyan".to_string());
     config.theme.greet = Some("green".to_string());

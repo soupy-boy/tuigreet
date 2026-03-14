@@ -10,7 +10,8 @@ use crate::config::{
 /// Supported variables: TUIGREET_DEBUG, TUIGREET_LOG_FILE,
 /// TUIGREET_SESSION_COMMAND, etc. Invalid boolean values are logged as warnings
 /// and ignored.
-pub fn apply_env_vars(config: &mut Config) {
+pub fn load_env_variables() -> Config {
+  let mut config = Config::default();
   // General config
   if let Ok(value) = env::var("TUIGREET_DEBUG") {
     if let Ok(debug) = parse_bool(&value) {
@@ -465,6 +466,7 @@ pub fn apply_env_vars(config: &mut Config) {
   if let Ok(value) = env::var("TUIGREET_THEME_BUTTON") {
     config.theme.button = Some(value);
   }
+  config
 }
 
 /// Parse a boolean value from string
@@ -507,8 +509,7 @@ mod tests {
       env::set_var("TUIGREET_ALIGN_GREETING", "center");
     }
 
-    let mut config = Config::default();
-    apply_env_vars(&mut config);
+    let config = load_env_variables();
 
     // Verify all theme components applied
     assert_eq!(config.theme.border, Some("red".to_string()));
@@ -516,10 +517,10 @@ mod tests {
     assert_eq!(config.theme.container, Some("green".to_string()));
 
     // Verify other env vars applied correctly (once, not per-component)
-    assert_eq!(config.session.sessions_dirs, vec![
-      "/test".to_string(),
-      "/usr/share".to_string()
-    ]);
+    assert_eq!(
+      config.session.sessions_dirs,
+      vec!["/test".to_string(), "/usr/share".to_string()]
+    );
     assert_eq!(config.display.align_greeting, AlignGreeting::Center);
 
     unsafe {

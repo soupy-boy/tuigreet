@@ -5,11 +5,7 @@ use std::{
 };
 
 use notify::{
-  Config as NotifyConfig,
-  Event,
-  EventKind,
-  RecommendedWatcher,
-  RecursiveMode,
+  Config as NotifyConfig, Event, EventKind, RecommendedWatcher, RecursiveMode,
   Watcher,
 };
 use tokio::sync::{RwLock, mpsc};
@@ -151,9 +147,7 @@ impl ConfigWatcher {
   ) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     debug!("Reloading config from: {}", config_path.display());
 
-    let mut config = load_config(Some(config_path))?;
-
-    tuigreet::config::env::apply_env_vars(&mut config);
+    let config = load_config(Some(config_path), None)?;
 
     match config.validate(false) {
       Ok(warnings) => {
