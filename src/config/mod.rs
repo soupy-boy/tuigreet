@@ -18,10 +18,10 @@ pub enum ConfigError {
 
   /// TOML parsing error with file context
   ParseWithContext {
-    file:             PathBuf,
-    line:             usize,
-    column:           usize,
-    context:          Vec<String>,
+    file: PathBuf,
+    line: usize,
+    column: usize,
+    context: Vec<String>,
     original_message: String,
   },
   /// General validation error with description

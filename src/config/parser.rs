@@ -6,7 +6,9 @@ use std::{
 
 use dirs::config_dir;
 
-use crate::config::{Config, ConfigError};
+use crate::config::{
+  AlignGreeting, Config, ConfigError, SecretMode, env::load_env_variables,
+};
 
 /// Load configuration from CLI path, user config, or system config.
 ///
@@ -24,25 +26,47 @@ use crate::config::{Config, ConfigError};
 /// Returns error if config file cannot be read or parsed
 pub fn load_config(
   cli_config_path: Option<&Path>,
+  cli_matches: Option<&getopts::Matches>,
 ) -> Result<Config, ConfigError> {
   if let Some(path) = cli_config_path {
-    // If CLI config path is provided, use only that file
     return load_config_from_path(path);
   }
 
-  // Load system and user configs
-  let system_config = load_system_config();
-  let user_config = load_user_config();
+  let mut config = Config::default();
 
-  // Start with system config (if available)
-  let mut config = system_config.unwrap_or_default();
+  if let Ok(system) = load_system_config() {
+    apply_config_layer(&mut config, system);
+  }
 
-  // Merge user config over system config
-  if let Ok(user_cfg) = user_config {
-    merge_configs(&mut config, user_cfg);
+  if let Ok(user) = load_user_config() {
+    apply_config_layer(&mut config, user);
+  }
+
+  let env_vars = load_env_variables();
+  apply_config_layer(&mut config, env_vars);
+
+  if let Some(cli) = cli_matches {
+    let cli_config = extract_cli_config(cli);
+    apply_config_layer(&mut config, cli_config);
   }
 
   Ok(config)
+}
+
+/// Overwrites dest with src. Used for layering: defaults -> system -> user -> env -> CLI
+fn apply_config_layer(dest: &mut Config, src: Config) {
+  dest.general = src.general;
+  dest.session = src.session;
+  dest.display = src.display;
+  dest.remember = src.remember;
+  dest.user_menu = src.user_menu;
+  dest.secret = src.secret;
+  dest.layout = src.layout;
+  dest.power = src.power;
+  dest.keybindings = src.keybindings;
+  dest.theme = src.theme;
+  dest.outputs = src.outputs;
+  dest.terminal = src.terminal;
 }
 
 /// Load configuration from a specific path.
@@ -103,10 +127,10 @@ fn toml_error(
 
     // Return error w/ context
     return ConfigError::ParseWithContext {
-      file:             path.to_path_buf(),
-      line:             line_num + 1,
-      column:           col_num + 1,
-      context:          context_lines,
+      file: path.to_path_buf(),
+      line: line_num + 1,
+      column: col_num + 1,
+      context: context_lines,
       original_message: original_error.message().to_string(),
     };
   }
@@ -137,179 +161,136 @@ fn load_user_config() -> Result<Config, ConfigError> {
   Ok(Config::default())
 }
 
-/// Merge source config into destination, preserving non-default values from
-/// source.
-///
-/// Only overwrites destination fields if source value differs from default.
-pub fn merge_configs(dest: &mut Config, src: Config) {
-  let defaults = Config::default();
-
+/// Extract CLI arguments into a Config struct (highest priority source)
+pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
+  let mut config = Config::default();
   // General config
-  if src.general.debug != defaults.general.debug {
-    dest.general.debug = src.general.debug;
+  if matches.opt_present("debug") {
+    config.general.debug = true;
   }
-  if src.general.log_file != defaults.general.log_file {
-    dest.general.log_file = src.general.log_file;
-  }
-
-  // Session config
-  if src.session.command != defaults.session.command {
-    dest.session.command = src.session.command;
-  }
-  if src.session.sessions_dirs != defaults.session.sessions_dirs {
-    dest.session.sessions_dirs = src.session.sessions_dirs;
-  }
-  if src.session.xsessions_dirs != defaults.session.xsessions_dirs {
-    dest.session.xsessions_dirs = src.session.xsessions_dirs;
-  }
-  if src.session.session_wrapper != defaults.session.session_wrapper {
-    dest.session.session_wrapper = src.session.session_wrapper;
-  }
-  if src.session.xsession_wrapper != defaults.session.xsession_wrapper {
-    dest.session.xsession_wrapper = src.session.xsession_wrapper;
-  }
-  if src.session.environments != defaults.session.environments {
-    dest.session.environments = src.session.environments;
-  }
-
   // Display config
-  if src.display.show_time != defaults.display.show_time {
-    dest.display.show_time = src.display.show_time;
+  if matches.opt_present("time") {
+    config.display.show_time = true;
   }
-  if src.display.time_format != defaults.display.time_format {
-    dest.display.time_format = src.display.time_format;
+  if let Some(format) = matches.opt_str("time-format") {
+    config.display.time_format = Some(format);
   }
-  if src.display.greeting != defaults.display.greeting {
-    dest.display.greeting = src.display.greeting;
+  if matches.opt_present("title") {
+    config.display.show_title = true;
   }
-  if src.display.show_title != defaults.display.show_title {
-    dest.display.show_title = src.display.show_title;
+  if let Some(greeting) = matches.opt_str("greeting") {
+    config.display.greeting = Some(greeting);
   }
-  if src.display.issue != defaults.display.issue {
-    dest.display.issue = src.display.issue;
+  if matches.opt_present("issue") {
+    config.display.issue = true;
   }
-  // AlignGreeting implements PartialEq through derive, so (hopefully) this
-  // works correctly
-  if src.display.align_greeting != defaults.display.align_greeting {
-    dest.display.align_greeting = src.display.align_greeting;
+  if let Some(align) = matches.opt_str("align-greeting") {
+    config.display.align_greeting = match align.as_str() {
+      "left" => AlignGreeting::Left,
+      "right" => AlignGreeting::Right,
+      _ => AlignGreeting::Center,
+    };
   }
-
   // Remember config
-  if src.remember.username != defaults.remember.username {
-    dest.remember.username = src.remember.username;
+  if let Some(user) = matches.opt_str("user") {
+    config.remember.default_user = Some(user);
   }
-  if src.remember.session != defaults.remember.session {
-    dest.remember.session = src.remember.session;
+  if matches.opt_present("remember") {
+    config.remember.username = true;
   }
-  if src.remember.user_session != defaults.remember.user_session {
-    dest.remember.user_session = src.remember.user_session;
+  if matches.opt_present("remember-session") {
+    config.remember.session = true;
   }
-
+  if matches.opt_present("remember-user-session") {
+    config.remember.user_session = true;
+  }
   // User menu config
-  if src.user_menu.enabled != defaults.user_menu.enabled {
-    dest.user_menu.enabled = src.user_menu.enabled;
+  if matches.opt_present("user-menu") {
+    config.user_menu.enabled = true;
   }
-  if src.user_menu.min_uid != defaults.user_menu.min_uid {
-    dest.user_menu.min_uid = src.user_menu.min_uid;
+  if let Some(min_uid) = matches.opt_str("user-menu-min-uid") {
+    if let Ok(uid) = min_uid.parse::<u32>() {
+      config.user_menu.min_uid = uid;
+    }
   }
-  if src.user_menu.max_uid != defaults.user_menu.max_uid {
-    dest.user_menu.max_uid = src.user_menu.max_uid;
+  if let Some(max_uid) = matches.opt_str("user-menu-max-uid") {
+    if let Ok(uid) = max_uid.parse::<u32>() {
+      config.user_menu.max_uid = uid;
+    }
   }
-
-  // Secret config
-  if src.secret.mode != defaults.secret.mode {
-    dest.secret.mode = src.secret.mode;
+  // Session config
+  if let Some(cmd) = matches.opt_str("cmd") {
+    config.session.command = Some(cmd);
   }
-  if src.secret.characters != defaults.secret.characters {
-    dest.secret.characters = src.secret.characters;
+  if let Some(dirs) = matches.opt_str("sessions") {
+    config.session.sessions_dirs = dirs.split(':').map(String::from).collect();
   }
-
+  if let Some(dirs) = matches.opt_str("xsessions") {
+    config.session.xsessions_dirs = dirs.split(':').map(String::from).collect();
+  }
+  if let Some(wrapper) = matches.opt_str("session-wrapper") {
+    config.session.session_wrapper = Some(wrapper);
+  }
+  if !matches.opt_present("no-xsession-wrapper") {
+    if let Some(wrapper) = matches.opt_str("xsession-wrapper") {
+      config.session.xsession_wrapper = Some(wrapper);
+    }
+  }
   // Layout config
-  if src.layout.width != defaults.layout.width {
-    dest.layout.width = src.layout.width;
+  if let Some(width) = matches.opt_str("width") {
+    if let Ok(w) = width.parse::<u16>() {
+      config.layout.width = w;
+    }
   }
-  if src.layout.window_padding != defaults.layout.window_padding {
-    dest.layout.window_padding = src.layout.window_padding;
+  if let Some(padding) = matches.opt_str("window-padding") {
+    if let Ok(p) = padding.parse::<u16>() {
+      config.layout.window_padding = Some(p);
+    }
   }
-  if src.layout.container_padding != defaults.layout.container_padding {
-    dest.layout.container_padding = src.layout.container_padding;
+  if let Some(padding) = matches.opt_str("container-padding") {
+    if let Ok(p) = padding.parse::<u16>() {
+      config.layout.container_padding = Some(p);
+    }
   }
-  if src.layout.prompt_padding != defaults.layout.prompt_padding {
-    dest.layout.prompt_padding = src.layout.prompt_padding;
+  if let Some(padding) = matches.opt_str("prompt-padding") {
+    if let Ok(p) = padding.parse::<u16>() {
+      config.layout.prompt_padding = Some(p);
+    }
   }
-
-  // Widget config
-  if src.layout.widgets.time_position != defaults.layout.widgets.time_position {
-    dest.layout.widgets.time_position = src.layout.widgets.time_position;
-  }
-  if src.layout.widgets.status_position
-    != defaults.layout.widgets.status_position
-  {
-    dest.layout.widgets.status_position = src.layout.widgets.status_position;
-  }
-
-  // Power config
-  if src.power.use_setsid != defaults.power.use_setsid {
-    dest.power.use_setsid = src.power.use_setsid;
-  }
-
   // Keybindings config
-  if src.keybindings.command != defaults.keybindings.command {
-    dest.keybindings.command = src.keybindings.command;
+  if let Some(key) = matches.opt_str("kb-command") {
+    if let Ok(k) = key.parse::<u8>() {
+      config.keybindings.command = k;
+    }
   }
-  if src.keybindings.sessions != defaults.keybindings.sessions {
-    dest.keybindings.sessions = src.keybindings.sessions;
+  if let Some(key) = matches.opt_str("kb-sessions") {
+    if let Ok(k) = key.parse::<u8>() {
+      config.keybindings.sessions = k;
+    }
   }
-  if src.keybindings.power != defaults.keybindings.power {
-    dest.keybindings.power = src.keybindings.power;
+  if let Some(key) = matches.opt_str("kb-power") {
+    if let Ok(k) = key.parse::<u8>() {
+      config.keybindings.power = k;
+    }
   }
-
-  // Outputs config. If source defines any outputs, they fully replace the
-  // destination list rather than merging element-by-element.
-  if !src.outputs.is_empty() {
-    dest.outputs = src.outputs;
+  // Secret config
+  if matches.opt_present("asterisks") {
+    config.secret.mode = SecretMode::Characters;
   }
-
-  // Terminal size override
-  if src.terminal.cols.is_some() {
-    dest.terminal.cols = src.terminal.cols;
+  if let Some(chars) = matches.opt_str("asterisks-char") {
+    config.secret.characters = chars;
   }
-  if src.terminal.rows.is_some() {
-    dest.terminal.rows = src.terminal.rows;
+  // Power config
+  if let Some(cmd) = matches.opt_str("power-shutdown") {
+    config.power.shutdown = Some(cmd);
   }
-
-  // Theme config
-  // We merge individual fields if they're different from defaults
-  if src.theme.border != defaults.theme.border {
-    dest.theme.border = src.theme.border;
+  if let Some(cmd) = matches.opt_str("power-reboot") {
+    config.power.reboot = Some(cmd);
   }
-  if src.theme.text != defaults.theme.text {
-    dest.theme.text = src.theme.text;
+  if matches.opt_present("power-no-setsid") {
+    config.power.use_setsid = false;
   }
-  if src.theme.time != defaults.theme.time {
-    dest.theme.time = src.theme.time;
-  }
-  if src.theme.container != defaults.theme.container {
-    dest.theme.container = src.theme.container;
-  }
-  if src.theme.title != defaults.theme.title {
-    dest.theme.title = src.theme.title;
-  }
-  if src.theme.greet != defaults.theme.greet {
-    dest.theme.greet = src.theme.greet;
-  }
-  if src.theme.prompt != defaults.theme.prompt {
-    dest.theme.prompt = src.theme.prompt;
-  }
-  if src.theme.input != defaults.theme.input {
-    dest.theme.input = src.theme.input;
-  }
-  if src.theme.action != defaults.theme.action {
-    dest.theme.action = src.theme.action;
-  }
-  if src.theme.button != defaults.theme.button {
-    dest.theme.button = src.theme.button;
-  }
+  config
 }
 
 impl Config {
@@ -966,5 +947,96 @@ session_wrapper = "   "
       result.is_err(),
       "Whitespace-only wrapper command should fail validation"
     );
+  }
+
+  // Config priority tests
+
+  #[test]
+  fn test_cli_only_no_config() {
+    let mut config = Config::default();
+
+    let mut cli = Config::default();
+    cli.keybindings.sessions = 5;
+
+    apply_config_layer(&mut config, cli);
+
+    assert_eq!(config.keybindings.sessions, 5);
+  }
+
+  #[test]
+  fn test_config_overrides_defaults() {
+    let mut config = Config::default();
+
+    let mut file_config = Config::default();
+    file_config.keybindings.command = 3;
+
+    apply_config_layer(&mut config, file_config);
+
+    assert_eq!(config.keybindings.command, 3);
+  }
+
+  #[test]
+  fn test_user_overrides_system() {
+    let mut config = Config::default();
+    config.keybindings.command = 5;
+
+    let mut user = Config::default();
+    user.keybindings.command = 7;
+
+    apply_config_layer(&mut config, user);
+
+    assert_eq!(config.keybindings.command, 7);
+  }
+
+  #[test]
+  fn test_env_overrides_user() {
+    let mut config = Config::default();
+    config.keybindings.power = 10;
+
+    let mut env = Config::default();
+    env.keybindings.power = 8;
+
+    apply_config_layer(&mut config, env);
+
+    assert_eq!(config.keybindings.power, 8);
+  }
+
+  #[test]
+  fn test_cli_overrides_env() {
+    let mut config = Config::default();
+    config.keybindings.sessions = 3;
+
+    let mut cli = Config::default();
+    cli.keybindings.sessions = 9;
+
+    apply_config_layer(&mut config, cli);
+
+    assert_eq!(config.keybindings.sessions, 9);
+  }
+
+  #[test]
+  fn test_full_priority_chain() {
+    let mut config = Config::default();
+    assert_eq!(config.keybindings.command, 2);
+
+    let mut system = Config::default();
+    system.keybindings.command = 5;
+    apply_config_layer(&mut config, system);
+    assert_eq!(config.keybindings.command, 5);
+
+    let mut user = Config::default();
+    user.keybindings.command = 7;
+    apply_config_layer(&mut config, user);
+    assert_eq!(config.keybindings.command, 7);
+
+    let mut env = Config::default();
+    env.keybindings.command = 9;
+    apply_config_layer(&mut config, env);
+    assert_eq!(config.keybindings.command, 9);
+
+    let mut cli = Config::default();
+    cli.keybindings.command = 11;
+    apply_config_layer(&mut config, cli);
+    assert_eq!(config.keybindings.command, 11);
   }
 }

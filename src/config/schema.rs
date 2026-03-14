@@ -119,7 +119,7 @@ impl TerminalConfig {
 }
 
 /// General configuration options
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct GeneralConfig {
   /// Enable debug logging
   #[serde(default)]
@@ -133,14 +133,14 @@ pub struct GeneralConfig {
 impl Default for GeneralConfig {
   fn default() -> Self {
     Self {
-      debug:    false,
+      debug: false,
       log_file: default_log_file(),
     }
   }
 }
 
 /// Session management configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct SessionConfig {
   /// Override session with a specific command
   #[serde(default)]
@@ -170,18 +170,18 @@ pub struct SessionConfig {
 impl Default for SessionConfig {
   fn default() -> Self {
     Self {
-      command:          None,
-      sessions_dirs:    default_sessions_dirs(),
-      xsessions_dirs:   default_xsessions_dirs(),
-      session_wrapper:  None,
+      command: None,
+      sessions_dirs: default_sessions_dirs(),
+      xsessions_dirs: default_xsessions_dirs(),
+      session_wrapper: None,
       xsession_wrapper: default_xsession_wrapper(),
-      environments:     Vec::new(),
+      environments: Vec::new(),
     }
   }
 }
 
 /// Display and visual configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
 pub struct DisplayConfig {
   /// Show current time
   #[serde(default)]
@@ -209,7 +209,7 @@ pub struct DisplayConfig {
 }
 
 /// Remember/cache configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
 pub struct RememberConfig {
   /// Default user to pre-fill
   #[serde(default)]
@@ -229,7 +229,7 @@ pub struct RememberConfig {
 }
 
 /// User menu configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct UserMenuConfig {
   /// Enable user selection menu
   #[serde(default)]
@@ -255,7 +255,7 @@ impl Default for UserMenuConfig {
 }
 
 /// Secret display configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct SecretConfig {
   /// How to display secrets
   #[serde(default)]
@@ -269,14 +269,14 @@ pub struct SecretConfig {
 impl Default for SecretConfig {
   fn default() -> Self {
     Self {
-      mode:       SecretMode::Hidden,
+      mode: SecretMode::Hidden,
       characters: default_secret_characters(),
     }
   }
 }
 
 /// Layout and sizing configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct LayoutConfig {
   /// Width of the main prompt container
   #[serde(default = "default_width")]
@@ -302,17 +302,17 @@ pub struct LayoutConfig {
 impl Default for LayoutConfig {
   fn default() -> Self {
     Self {
-      width:             default_width(),
-      window_padding:    None,
+      width: default_width(),
+      window_padding: None,
       container_padding: None,
-      prompt_padding:    None,
-      widgets:           WidgetConfig::default(),
+      prompt_padding: None,
+      widgets: WidgetConfig::default(),
     }
   }
 }
 
 /// Widget positioning configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
 pub struct WidgetConfig {
   /// Position of time widget
   #[serde(default)]
@@ -324,7 +324,7 @@ pub struct WidgetConfig {
 }
 
 /// Power management configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct PowerConfig {
   /// Custom shutdown command
   #[serde(default)]
@@ -342,15 +342,15 @@ pub struct PowerConfig {
 impl Default for PowerConfig {
   fn default() -> Self {
     Self {
-      shutdown:   None,
-      reboot:     None,
+      shutdown: None,
+      reboot: None,
       use_setsid: default_use_setsid(),
     }
   }
 }
 
 /// Keybindings configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct KeybindingsConfig {
   /// F-key for command menu (1-12)
   #[serde(default = "default_kb_command")]
@@ -368,46 +368,46 @@ pub struct KeybindingsConfig {
 impl Default for KeybindingsConfig {
   fn default() -> Self {
     Self {
-      command:  default_kb_command(),
+      command: default_kb_command(),
       sessions: default_kb_sessions(),
-      power:    default_kb_power(),
+      power: default_kb_power(),
     }
   }
 }
 
 /// Theme/color configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
 pub struct ThemeConfig {
   /// Border color
   #[serde(default)]
-  pub border:    Option<String>,
+  pub border: Option<String>,
   /// Base text color
   #[serde(default)]
-  pub text:      Option<String>,
+  pub text: Option<String>,
   /// Time display color
   #[serde(default)]
-  pub time:      Option<String>,
+  pub time: Option<String>,
   /// Container background color
   #[serde(default)]
   pub container: Option<String>,
   /// Container title color
   #[serde(default)]
-  pub title:     Option<String>,
+  pub title: Option<String>,
   /// Greeting text color
   #[serde(default)]
-  pub greet:     Option<String>,
+  pub greet: Option<String>,
   /// Prompt text color
   #[serde(default)]
-  pub prompt:    Option<String>,
+  pub prompt: Option<String>,
   /// User input color
   #[serde(default)]
-  pub input:     Option<String>,
+  pub input: Option<String>,
   /// Action text color
   #[serde(default)]
-  pub action:    Option<String>,
+  pub action: Option<String>,
   /// Action button color
   #[serde(default)]
-  pub button:    Option<String>,
+  pub button: Option<String>,
 }
 
 /// Greeting alignment options

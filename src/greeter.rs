@@ -1,10 +1,5 @@
 use std::{
-  convert::TryInto,
-  env,
-  error::Error,
-  ffi::OsStr,
-  path::PathBuf,
-  process,
+  convert::TryInto, env, error::Error, ffi::OsStr, path::PathBuf, process,
   sync::Arc,
 };
 
@@ -20,30 +15,17 @@ use tokio::{
 };
 use tracing_appender::non_blocking::WorkerGuard;
 use tuigreet::{
-  AuthStatus,
-  DEFAULT_ASTERISKS_CHARS,
-  DEFAULT_LOG_FILE,
-  DEFAULT_XSESSION_WRAPPER,
-  GreetAlign,
-  Mode,
-  SecretDisplay,
-  Theme,
+  AuthStatus, DEFAULT_ASTERISKS_CHARS, DEFAULT_LOG_FILE,
+  DEFAULT_XSESSION_WRAPPER, GreetAlign, Mode, SecretDisplay, Theme,
 };
 use zeroize::Zeroize;
 
 use crate::{
   event::Event,
   info::{
-    get_issue,
-    get_last_command,
-    get_last_session_path,
-    get_last_user_command,
-    get_last_user_name,
-    get_last_user_session,
-    get_last_user_username,
-    get_min_max_uids,
-    get_sessions,
-    get_users,
+    get_issue, get_last_command, get_last_session_path, get_last_user_command,
+    get_last_user_name, get_last_user_session, get_last_user_username,
+    get_min_max_uids, get_sessions, get_users,
   },
   power::PowerOption,
   ui::{
@@ -58,20 +40,20 @@ const DEFAULT_LOCALE: Locale = Locale::en_US;
 
 /// Core greeter state managing authentication, UI, and session selection.
 pub struct Greeter {
-  pub debug:   bool,
+  pub debug: bool,
   pub logfile: String,
-  pub logger:  Option<WorkerGuard>,
+  pub logger: Option<WorkerGuard>,
 
-  pub locale:        Locale,
-  pub config:        Option<Matches>,
+  pub locale: Locale,
+  pub config: Option<Matches>,
   pub loaded_config: Option<tuigreet::config::Config>, /* store loaded TOML
                                                         * config */
-  pub socket:        String,
-  pub stream:        Option<Arc<RwLock<UnixStream>>>,
-  pub events:        Option<Sender<Event>>,
+  pub socket: String,
+  pub stream: Option<Arc<RwLock<UnixStream>>>,
+  pub events: Option<Sender<Event>>,
 
   // Current mode of the application, will define what actions are permitted.
-  pub mode:          Mode,
+  pub mode: Mode,
   // Mode the application will return to when exiting the current mode.
   pub previous_mode: Mode,
   // Offset the cursor should be at from its base position for the current
@@ -82,118 +64,118 @@ pub struct Greeter {
   // Previous buffer is saved when a transient screen has to use the buffer, to
   // be able to restore it when leaving the transient screen.
   pub previous_buffer: Option<String>,
-  pub buffer:          String,
+  pub buffer: String,
 
   // Define the selected session and how to resolve it.
-  pub session_source:   SessionSource,
+  pub session_source: SessionSource,
   // List of session files found on disk.
-  pub session_paths:    Vec<(PathBuf, SessionType)>,
+  pub session_paths: Vec<(PathBuf, SessionType)>,
   // Menu for session selection.
-  pub sessions:         Menu<Session>,
+  pub sessions: Menu<Session>,
   // Wrapper command to prepend to non-X11 sessions.
-  pub session_wrapper:  Option<String>,
+  pub session_wrapper: Option<String>,
   // Wrapper command to prepend to X11 sessions.
   pub xsession_wrapper: Option<String>,
 
   // Whether user menu is enabled.
-  pub user_menu:    bool,
+  pub user_menu: bool,
   // Menu for user selection.
-  pub users:        Menu<User>,
+  pub users: Menu<User>,
   // Default user to pre-fill.
   pub default_user: Option<String>,
   // Current username. Masked to display the full name if available.
-  pub username:     MaskedString,
+  pub username: MaskedString,
   // Prompt that should be displayed to ask for entry.
-  pub prompt:       Option<String>,
+  pub prompt: Option<String>,
 
   // Whether the current edition prompt should be hidden.
   pub asking_for_secret: bool,
   // How should secrets be displayed?
-  pub secret_display:    SecretDisplay,
+  pub secret_display: SecretDisplay,
 
   // Whether last logged-in user should be remembered.
-  pub remember:              bool,
+  pub remember: bool,
   // Whether last launched session (regardless of user) should be remembered.
-  pub remember_session:      bool,
+  pub remember_session: bool,
   // Whether last launched session for the current user should be remembered.
   pub remember_user_session: bool,
 
   // Style object for the terminal UI
-  pub theme:       Theme,
+  pub theme: Theme,
   // Display the current time
-  pub time:        bool,
+  pub time: bool,
   // Time format
   pub time_format: Option<String>,
   // Greeting message (MOTD) to use to welcome the user.
-  pub greeting:    Option<String>,
+  pub greeting: Option<String>,
   // Container's title configuration
-  pub title:       TitleOption,
+  pub title: TitleOption,
   // Transaction message to show to the user.
-  pub message:     Option<String>,
+  pub message: Option<String>,
 
   // Menu for power options.
-  pub powers:       Menu<Power>,
+  pub powers: Menu<Power>,
   // Whether to prefix the power commands with `setsid`.
   pub power_setsid: bool,
 
-  pub kb_command:  u8,
+  pub kb_command: u8,
   pub kb_sessions: u8,
-  pub kb_power:    u8,
+  pub kb_power: u8,
 
   // The software is waiting for a response from `greetd`.
   pub working: bool,
   // We are done working.
-  pub done:    bool,
+  pub done: bool,
   // Should we exit?
-  pub exit:    Option<AuthStatus>,
+  pub exit: Option<AuthStatus>,
 }
 
 impl Default for Greeter {
   fn default() -> Self {
     Self {
-      debug:                 false,
-      logfile:               DEFAULT_LOG_FILE.to_string(),
-      logger:                None,
-      locale:                DEFAULT_LOCALE,
-      config:                None,
-      loaded_config:         None,
-      socket:                String::new(),
-      stream:                None,
-      events:                None,
-      mode:                  Mode::default(),
-      previous_mode:         Mode::default(),
-      cursor_offset:         0,
-      previous_buffer:       None,
-      buffer:                String::new(),
-      session_source:        SessionSource::default(),
-      session_paths:         Vec::new(),
-      sessions:              Menu::default(),
-      session_wrapper:       None,
-      xsession_wrapper:      None,
-      user_menu:             false,
-      users:                 Menu::default(),
-      default_user:          None,
-      username:              MaskedString::default(),
-      prompt:                None,
-      asking_for_secret:     false,
-      secret_display:        SecretDisplay::default(),
-      remember:              false,
-      remember_session:      false,
+      debug: false,
+      logfile: DEFAULT_LOG_FILE.to_string(),
+      logger: None,
+      locale: DEFAULT_LOCALE,
+      config: None,
+      loaded_config: None,
+      socket: String::new(),
+      stream: None,
+      events: None,
+      mode: Mode::default(),
+      previous_mode: Mode::default(),
+      cursor_offset: 0,
+      previous_buffer: None,
+      buffer: String::new(),
+      session_source: SessionSource::default(),
+      session_paths: Vec::new(),
+      sessions: Menu::default(),
+      session_wrapper: None,
+      xsession_wrapper: None,
+      user_menu: false,
+      users: Menu::default(),
+      default_user: None,
+      username: MaskedString::default(),
+      prompt: None,
+      asking_for_secret: false,
+      secret_display: SecretDisplay::default(),
+      remember: false,
+      remember_session: false,
       remember_user_session: false,
-      theme:                 Theme::default(),
-      time:                  false,
-      time_format:           None,
-      greeting:              None,
-      title:                 Default::default(),
-      message:               None,
-      powers:                Menu::default(),
-      power_setsid:          false,
-      kb_command:            2,
-      kb_sessions:           3,
-      kb_power:              12,
-      working:               false,
-      done:                  false,
-      exit:                  None,
+      theme: Theme::default(),
+      time: false,
+      time_format: None,
+      greeting: None,
+      title: Default::default(),
+      message: None,
+      powers: Menu::default(),
+      power_setsid: false,
+      kb_command: 2,
+      kb_sessions: 3,
+      kb_power: 12,
+      working: false,
+      done: false,
+      exit: None,
     }
   }
 }
@@ -212,8 +194,8 @@ impl Greeter {
     greeter.set_locale();
 
     greeter.powers = Menu {
-      title:    fl!("title_power"),
-      options:  Default::default(),
+      title: fl!("title_power"),
+      options: Default::default(),
       selected: 0,
     };
 
@@ -238,11 +220,11 @@ impl Greeter {
           .config()
           .opt_str("config")
           .map(std::path::PathBuf::from);
-        match tuigreet::config::parser::load_config(config_path.as_deref()) {
-          Ok(mut config) => {
-            // Apply environment variables
-            tuigreet::config::env::apply_env_vars(&mut config);
-
+        match tuigreet::config::parser::load_config(
+          config_path.as_deref(),
+          greeter.config.as_ref(),
+        ) {
+          Ok(config) => {
             // Validate config
             match config.validate(false) {
               Ok(warnings) => {
@@ -309,8 +291,8 @@ impl Greeter {
     }
 
     greeter.sessions = Menu {
-      title:    fl!("title_session"),
-      options:  sessions,
+      title: fl!("title_session"),
+      options: sessions,
       selected: 0,
     };
 
@@ -840,8 +822,8 @@ impl Greeter {
       }
 
       self.users = Menu {
-        title:    fl!("title_users"),
-        options:  get_users(min_uid, max_uid),
+        title: fl!("title_users"),
+        options: get_users(min_uid, max_uid),
         selected: 0,
       };
 
@@ -917,14 +899,14 @@ impl Greeter {
     }
 
     self.powers.options.push(Power {
-      action:  PowerOption::Shutdown,
-      label:   fl!("shutdown"),
+      action: PowerOption::Shutdown,
+      label: fl!("shutdown"),
       command: self.config().opt_str("power-shutdown"),
     });
 
     self.powers.options.push(Power {
-      action:  PowerOption::Reboot,
-      label:   fl!("reboot"),
+      action: PowerOption::Reboot,
+      label: fl!("reboot"),
       command: self.config().opt_str("power-reboot"),
     });
 
@@ -979,170 +961,70 @@ impl Greeter {
   // Apply configuration settings to the greeter, respecting CLI overrides
   pub fn apply_config(&mut self, config: &tuigreet::config::Config) {
     use tuigreet::config::SecretMode;
-
-    // Only apply config values if CLI didn't override them
-    // General config
-    if !self.config().opt_present("debug") {
-      self.debug = config.general.debug;
+    // General
+    self.debug = config.general.debug;
+    // Session
+    if config.session.command.is_some() {
+      self.session_source = SessionSource::DefaultCommand(
+        config.session.command.clone().unwrap(),
+        None,
+      );
     }
-
-    // Session config
-    if !self.config().opt_present("cmd")
-      && config.session.command.is_some()
-      && let Some(ref cmd) = config.session.command
-    {
-      self.session_source = SessionSource::DefaultCommand(cmd.clone(), None);
-    }
-
-    if !self.config().opt_present("sessions") {
-      self
-        .session_paths
-        .extend(config.session.sessions_dirs.iter().map(|dir| {
-          (
-            PathBuf::from(dir),
-            crate::ui::sessions::SessionType::Wayland,
-          )
-        }));
-    }
-
-    if !self.config().opt_present("xsessions") {
-      self
-        .session_paths
-        .extend(config.session.xsessions_dirs.iter().map(|dir| {
-          (PathBuf::from(dir), crate::ui::sessions::SessionType::X11)
-        }));
-    }
-
-    if !self.config().opt_present("session-wrapper")
-      && config.session.session_wrapper.is_some()
-    {
+    self
+      .session_paths
+      .extend(config.session.sessions_dirs.iter().map(|dir| {
+        (
+          PathBuf::from(dir),
+          crate::ui::sessions::SessionType::Wayland,
+        )
+      }));
+    self.session_paths.extend(
+      config
+        .session
+        .xsessions_dirs
+        .iter()
+        .map(|dir| (PathBuf::from(dir), crate::ui::sessions::SessionType::X11)),
+    );
+    if config.session.session_wrapper.is_some() {
       self.session_wrapper = config.session.session_wrapper.clone();
     }
-
-    if !self.config().opt_present("xsession-wrapper")
+    if config.session.xsession_wrapper.is_some()
       && !self.config().opt_present("no-xsession-wrapper")
     {
       self.xsession_wrapper = config.session.xsession_wrapper.clone();
     }
-
-    // Display config
-    if !self.config().opt_present("time") {
-      self.time = config.display.show_time;
+    // Display
+    self.time = config.display.show_time;
+    self.time_format = config.display.time_format.clone();
+    self.greeting = config.display.greeting.clone();
+    self.title.enable = config.display.show_title;
+    // Remember
+    self.default_user = config.remember.default_user.clone();
+    self.remember = config.remember.username;
+    self.remember_session = config.remember.session;
+    self.remember_user_session = config.remember.user_session;
+    // User menu
+    self.user_menu = config.user_menu.enabled;
+    if self.user_menu {
+      use crate::info::get_users;
+      self.users = Menu {
+        title: fl!("title_users"),
+        options: get_users(config.user_menu.min_uid, config.user_menu.max_uid),
+        selected: 0,
+      };
     }
-
-    if !self.config().opt_present("time-format")
-      && config.display.time_format.is_some()
-    {
-      self.time_format = config.display.time_format.clone();
+    // Secret
+    match config.secret.mode {
+      SecretMode::Hidden => self.secret_display = SecretDisplay::Hidden,
+      SecretMode::Characters => {
+        self.secret_display =
+          SecretDisplay::Character(config.secret.characters.clone())
+      },
     }
-
-    if !self.config().opt_present("greeting")
-      && config.display.greeting.is_some()
-    {
-      self.greeting = config.display.greeting.clone();
-    }
-
-    if !self.config().opt_present("title") {
-      self.title.enable = config.display.show_title;
-    }
-
-    if !self.config().opt_present("issue") {
-      // XXX: issue handling is done in parse_options, so we need to set
-      // greeting from issue there
-    }
-
-    // Remember config
-    if !self.config().opt_present("user")
-      && config.remember.default_user.is_some()
-    {
-      self.default_user = config.remember.default_user.clone();
-    }
-
-    if !self.config().opt_present("remember") {
-      self.remember = config.remember.username;
-    }
-
-    if !self.config().opt_present("remember-session") {
-      self.remember_session = config.remember.session;
-    }
-
-    if !self.config().opt_present("remember-user-session") {
-      self.remember_user_session = config.remember.user_session;
-    }
-
-    // User menu config
-    if !self.config().opt_present("user-menu") {
-      self.user_menu = config.user_menu.enabled;
-
-      // If user menu is enabled, set up the users
-      if self.user_menu {
-        // Validate UID range
-        if config.user_menu.min_uid > config.user_menu.max_uid {
-          tracing::error!(
-            "Invalid UID range in config: min_uid ({}) must not exceed \
-             max_uid ({}). Disabling user menu.",
-            config.user_menu.min_uid,
-            config.user_menu.max_uid
-          );
-          self.user_menu = false;
-        } else {
-          use crate::info::get_users;
-          self.users = Menu {
-            title:    fl!("title_users"),
-            options:  get_users(
-              config.user_menu.min_uid,
-              config.user_menu.max_uid,
-            ),
-            selected: 0,
-          };
-        }
-      }
-    }
-
-    // Secret config
-    if !self.config().opt_present("asterisks") {
-      match config.secret.mode {
-        SecretMode::Hidden => self.secret_display = SecretDisplay::Hidden,
-        SecretMode::Characters => {
-          self.secret_display =
-            SecretDisplay::Character(config.secret.characters.clone());
-        },
-      }
-    }
-
-    // Keybindings config
-    if !self.config().opt_present("kb-command") {
-      self.kb_command = config.keybindings.command;
-    }
-    if !self.config().opt_present("kb-sessions") {
-      self.kb_sessions = config.keybindings.sessions;
-    }
-    if !self.config().opt_present("kb-power") {
-      self.kb_power = config.keybindings.power;
-    }
-
-    if self.kb_command == self.kb_sessions
-      || self.kb_sessions == self.kb_power
-      || self.kb_power == self.kb_command
-    {
-      tracing::error!(
-        "Keybindings must all be distinct after merging CLI and config. \
-         Found: command={}, sessions={}, power={}. Using CLI values only.",
-        self.kb_command,
-        self.kb_sessions,
-        self.kb_power
-      );
-
-      if !self.config().opt_present("kb-command") {
-        self.kb_command = 2;
-      }
-      if !self.config().opt_present("kb-sessions") {
-        self.kb_sessions = 3;
-      }
-      if !self.config().opt_present("kb-power") {
-        self.kb_power = 12;
-      }
-    }
+    // Keybindings
+    self.kb_command = config.keybindings.command;
+    self.kb_sessions = config.keybindings.sessions;
+    self.kb_power = config.keybindings.power;
   }
 
   // Apply theme configuration
@@ -1331,39 +1213,5 @@ mod test {
         false => assert!(matches!(greeter.parse_options(*opts).await, Err(_))),
       }
     }
-  }
-
-  #[tokio::test]
-  async fn test_merged_keybindings_validated() {
-    let mut greeter = Greeter::default();
-
-    greeter
-      .parse_options(&["--kb-sessions", "5"])
-      .await
-      .expect("parse should succeed");
-
-    assert_eq!(greeter.kb_command, 2);
-    assert_eq!(greeter.kb_sessions, 5);
-    assert_eq!(greeter.kb_power, 12);
-
-    let mut config = tuigreet::config::Config::default();
-    config.keybindings.command = 5;
-    config.keybindings.sessions = 3;
-    config.keybindings.power = 7;
-
-    assert!(config.validate(false).is_ok(), "Config alone is valid");
-
-    greeter.apply_config(&config);
-
-    assert_eq!(greeter.kb_command, 2, "kb_command reverted to CLI default");
-    assert_eq!(greeter.kb_sessions, 5, "kb_sessions from CLI preserved");
-    assert_eq!(greeter.kb_power, 12, "kb_power reverted to CLI default");
-
-    assert!(
-      greeter.kb_command != greeter.kb_sessions
-        && greeter.kb_sessions != greeter.kb_power
-        && greeter.kb_power != greeter.kb_command,
-      "Keybindings must be distinct after applying config"
-    );
   }
 }
