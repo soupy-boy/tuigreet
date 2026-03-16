@@ -1,6 +1,6 @@
 [package]
 name         = "tuigreet"
-version      = "0.9.3"
+version      = "0.10.1"
 authors      = [ "Antoine POPINEAU <antoine@popineau.eu>", "NotAShelf <raf@notashelf.dev" ]
 edition      = "2024"
 license      = "GPL-3.0-only"
