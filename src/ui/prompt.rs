@@ -12,7 +12,18 @@ use super::common::style::Themed;
 use crate::{
   Greeter,
   info::get_hostname,
-  ui::{Frame, prompt_value, util::{get_rect_bounds, titleize, get_message_height, get_greeting_height, get_input_width, get_cursor_offset}},
+  ui::{
+    Frame,
+    prompt_value,
+    util::{
+      get_cursor_offset,
+      get_greeting_height,
+      get_input_width,
+      get_message_height,
+      get_rect_bounds,
+      titleize,
+    },
+  },
 };
 
 const GREETING_INDEX: usize = 0;

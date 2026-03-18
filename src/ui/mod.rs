@@ -269,7 +269,9 @@ where
     theme
       .of(&[Themed::ActionButton])
       .add_modifier(Modifier::REVERSED)
-  } else { theme.of(&[Themed::Action]) };
+  } else {
+    theme.of(&[Themed::Action])
+  };
 
   Span::from(buttonize(&text.into())).style(style)
 }

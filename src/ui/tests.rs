@@ -126,7 +126,8 @@ async fn test_status_bar_top_position() {
   assert!(
     top_has_status && !bottom_has_status,
     "Status bar should be at row 0 when configured for WidgetPosition::Top. \
-     Found at top (row 0): {top_has_status}, Found at bottom (row 22): {bottom_has_status}"
+     Found at top (row 0): {top_has_status}, Found at bottom (row 22): \
+     {bottom_has_status}"
   );
 }
 

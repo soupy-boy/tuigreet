@@ -38,7 +38,10 @@ async fn main() {
   let greeter = Greeter::new(events.sender()).await;
 
   if let Err(error) = run(backend, greeter, events).await {
-    if matches!(error.downcast_ref::<AuthStatus>(), Some(AuthStatus::Success)) {
+    if matches!(
+      error.downcast_ref::<AuthStatus>(),
+      Some(AuthStatus::Success)
+    ) {
       return;
     }
 
@@ -141,8 +144,10 @@ where
       },
 
       Some(Event::PowerCommand(command)) => {
-        if matches!(power::run(&greeter, command).await, PowerPostAction::ClearScreen)
-        {
+        if matches!(
+          power::run(&greeter, command).await,
+          PowerPostAction::ClearScreen
+        ) {
           execute!(io::stdout(), LeaveAlternateScreen)?;
           terminal.set_cursor_position((1, 1))?;
           terminal.clear()?;

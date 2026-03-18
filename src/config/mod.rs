@@ -72,10 +72,7 @@ impl fmt::Display for ConfigError {
       },
       Self::Validation(msg) => write!(f, "Validation error: {msg}"),
       Self::MutuallyExclusive(opt1, opt2) => {
-        write!(
-          f,
-          "Options '{opt1}' and '{opt2}' are mutually exclusive"
-        )
+        write!(f, "Options '{opt1}' and '{opt2}' are mutually exclusive")
       },
       Self::Dependency(msg) => write!(f, "Dependency error: {msg}"),
       Self::InvalidRange(msg) => write!(f, "Invalid range: {msg}"),

@@ -69,6 +69,9 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
   if src.general.log_file != defaults.general.log_file {
     dest.general.log_file = src.general.log_file;
   }
+  if src.general.quiet != defaults.general.quiet {
+    dest.general.quiet = src.general.quiet;
+  }
 
   // Session
   if src.session.command != defaults.session.command {
@@ -332,6 +335,9 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if matches.opt_present("debug") {
     config.general.debug = true;
   }
+  if matches.opt_present("quiet") {
+    config.general.quiet = true;
+  }
   // Display config
   if matches.opt_present("time") {
     config.display.show_time = true;
@@ -373,13 +379,15 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
     config.user_menu.enabled = true;
   }
   if let Some(min_uid) = matches.opt_str("user-menu-min-uid")
-    && let Ok(uid) = min_uid.parse::<u32>() {
-      config.user_menu.min_uid = uid;
-    }
+    && let Ok(uid) = min_uid.parse::<u32>()
+  {
+    config.user_menu.min_uid = uid;
+  }
   if let Some(max_uid) = matches.opt_str("user-menu-max-uid")
-    && let Ok(uid) = max_uid.parse::<u32>() {
-      config.user_menu.max_uid = uid;
-    }
+    && let Ok(uid) = max_uid.parse::<u32>()
+  {
+    config.user_menu.max_uid = uid;
+  }
   // Session config
   if let Some(cmd) = matches.opt_str("cmd") {
     config.session.command = Some(cmd);
@@ -394,39 +402,47 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
     config.session.session_wrapper = Some(wrapper);
   }
   if !matches.opt_present("no-xsession-wrapper")
-    && let Some(wrapper) = matches.opt_str("xsession-wrapper") {
-      config.session.xsession_wrapper = Some(wrapper);
-    }
+    && let Some(wrapper) = matches.opt_str("xsession-wrapper")
+  {
+    config.session.xsession_wrapper = Some(wrapper);
+  }
   // Layout config
   if let Some(width) = matches.opt_str("width")
-    && let Ok(w) = width.parse::<u16>() {
-      config.layout.width = w;
-    }
+    && let Ok(w) = width.parse::<u16>()
+  {
+    config.layout.width = w;
+  }
   if let Some(padding) = matches.opt_str("window-padding")
-    && let Ok(p) = padding.parse::<u16>() {
-      config.layout.window_padding = Some(p);
-    }
+    && let Ok(p) = padding.parse::<u16>()
+  {
+    config.layout.window_padding = Some(p);
+  }
   if let Some(padding) = matches.opt_str("container-padding")
-    && let Ok(p) = padding.parse::<u16>() {
-      config.layout.container_padding = Some(p);
-    }
+    && let Ok(p) = padding.parse::<u16>()
+  {
+    config.layout.container_padding = Some(p);
+  }
   if let Some(padding) = matches.opt_str("prompt-padding")
-    && let Ok(p) = padding.parse::<u16>() {
-      config.layout.prompt_padding = Some(p);
-    }
+    && let Ok(p) = padding.parse::<u16>()
+  {
+    config.layout.prompt_padding = Some(p);
+  }
   // Keybindings config
   if let Some(key) = matches.opt_str("kb-command")
-    && let Ok(k) = key.parse::<u8>() {
-      config.keybindings.command = k;
-    }
+    && let Ok(k) = key.parse::<u8>()
+  {
+    config.keybindings.command = k;
+  }
   if let Some(key) = matches.opt_str("kb-sessions")
-    && let Ok(k) = key.parse::<u8>() {
-      config.keybindings.sessions = k;
-    }
+    && let Ok(k) = key.parse::<u8>()
+  {
+    config.keybindings.sessions = k;
+  }
   if let Some(key) = matches.opt_str("kb-power")
-    && let Ok(k) = key.parse::<u8>() {
-      config.keybindings.power = k;
-    }
+    && let Ok(k) = key.parse::<u8>()
+  {
+    config.keybindings.power = k;
+  }
   // Secret config
   if matches.opt_present("asterisks") {
     config.secret.mode = SecretMode::Characters;
@@ -569,7 +585,8 @@ impl Config {
       && padding > 10
     {
       warnings.push(format!(
-        "window_padding is very high ({padding}), this may cause display issues"
+        "window_padding is very high ({padding}), this may cause display \
+         issues"
       ));
     }
 
@@ -577,7 +594,8 @@ impl Config {
       && padding > 10
     {
       warnings.push(format!(
-        "container_padding is very high ({padding}), this may cause display issues"
+        "container_padding is very high ({padding}), this may cause display \
+         issues"
       ));
     }
 
@@ -774,7 +792,8 @@ user_session = true
       warnings.iter().any(|w| {
         w.contains("remember.session") && w.contains("remember.user_session")
       }),
-      "Expected a warning about conflicting remember options, got: {warnings:?}"
+      "Expected a warning about conflicting remember options, got: \
+       {warnings:?}"
     );
   }
 

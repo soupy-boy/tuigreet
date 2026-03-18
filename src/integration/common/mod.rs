@@ -210,7 +210,8 @@ impl IntegrationRunner {
 
 fn rethrow(result: Result<(), JoinError>) {
   if let Err(err) = result
-    && let Ok(panick) = err.try_into_panic() {
-      panic::resume_unwind(panick);
-    }
+    && let Ok(panick) = err.try_into_panic()
+  {
+    panic::resume_unwind(panick);
+  }
 }

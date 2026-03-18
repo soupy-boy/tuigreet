@@ -53,7 +53,7 @@ impl Theme {
   /// # Returns
   ///
   /// Theme with parsed colors, using fallbacks for unspecified elements
-  #[must_use] 
+  #[must_use]
   pub fn parse(spec: &str) -> Self {
     use Component::{Bg, Fg};
 
@@ -96,7 +96,7 @@ impl Theme {
     style
   }
 
-  #[must_use] 
+  #[must_use]
   pub fn of(&self, targets: &[Themed]) -> Style {
     targets
       .iter()
@@ -104,7 +104,18 @@ impl Theme {
   }
 
   const fn apply(&self, style: Style, target: &Themed) -> Style {
-    use Themed::{Container, Time, Text, Border, Title, Greet, Prompt, Input, Action, ActionButton};
+    use Themed::{
+      Action,
+      ActionButton,
+      Border,
+      Container,
+      Greet,
+      Input,
+      Prompt,
+      Text,
+      Time,
+      Title,
+    };
 
     let color = match target {
       Container => &self.container,

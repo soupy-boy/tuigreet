@@ -228,6 +228,9 @@ config > defaults
 #### Configuration Example
 
 ```toml
+[general]
+quiet = false
+
 [display]
 show_time = true
 greeting = "Welcome to the system!"
@@ -294,6 +297,7 @@ for top-level options:
 # General configuration
 export TUIGREET_DEBUG=true
 export TUIGREET_LOG_FILE="/custom/path/tuigreet.log"
+export TUIGREET_QUIET=false
 
 # Display options
 export TUIGREET_TIME=true

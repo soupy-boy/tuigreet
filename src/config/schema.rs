@@ -89,26 +89,30 @@ impl TerminalConfig {
   /// Returns `true` when the config is consistent: either both fields are
   /// absent, or both are `Some(v)` with `v > 0`.  Any other combination is
   /// invalid.
-  #[must_use] 
+  #[must_use]
   pub fn is_valid(&self) -> bool {
     self.invalid_reason().is_none()
   }
 
   /// Returns a human-readable error string describing the first invalid
   /// condition found, or `None` when the config is consistent.
-  #[must_use] 
+  #[must_use]
   pub fn invalid_reason(&self) -> Option<String> {
     match (self.cols, self.rows) {
-      (Some(_), None) => Some(
-        "`terminal.cols` is set but `terminal.rows` is missing; both must \
-         be provided together"
-          .to_string(),
-      ),
-      (None, Some(_)) => Some(
-        "`terminal.rows` is set but `terminal.cols` is missing; both must \
-         be provided together"
-          .to_string(),
-      ),
+      (Some(_), None) => {
+        Some(
+          "`terminal.cols` is set but `terminal.rows` is missing; both must \
+           be provided together"
+            .to_string(),
+        )
+      },
+      (None, Some(_)) => {
+        Some(
+          "`terminal.rows` is set but `terminal.cols` is missing; both must \
+           be provided together"
+            .to_string(),
+        )
+      },
       (Some(0), Some(_)) => {
         Some("`terminal.cols` must be greater than 0".to_string())
       },
@@ -130,6 +134,10 @@ pub struct GeneralConfig {
   /// Log file path
   #[serde(default = "default_log_file")]
   pub log_file: String,
+
+  // quiet session launch
+  #[serde(default)]
+  pub quiet: bool,
 }
 
 impl Default for GeneralConfig {
@@ -137,6 +145,7 @@ impl Default for GeneralConfig {
     Self {
       debug:    false,
       log_file: default_log_file(),
+      quiet:    false,
     }
   }
 }

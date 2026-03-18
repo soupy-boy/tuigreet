@@ -72,7 +72,7 @@ pub enum SecretDisplay {
 
 impl SecretDisplay {
   /// Returns true if secrets should be shown (as replacement characters)
-  #[must_use] 
+  #[must_use]
   pub const fn show(&self) -> bool {
     match self {
       Self::Hidden => false,

@@ -63,9 +63,7 @@ pub fn enumerate_outputs() -> Vec<DrmOutput> {
 
 /// Inner implementation of [`enumerate_outputs`] that accepts an arbitrary
 /// sysfs DRM root path, allowing unit tests to use a temporary directory.
-pub fn enumerate_outputs_from(
-  drm_path: &std::path::Path,
-) -> Vec<DrmOutput> {
+pub fn enumerate_outputs_from(drm_path: &std::path::Path) -> Vec<DrmOutput> {
   let mut outputs = Vec::new();
 
   let Ok(entries) = fs::read_dir(drm_path) else {

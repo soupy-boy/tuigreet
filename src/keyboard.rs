@@ -173,21 +173,15 @@ pub async fn handle(
     KeyEvent {
       code: KeyCode::Up, ..
     } => {
-      if greeter.mode == Mode::Users
-        && greeter.users.selected > 0
-      {
+      if greeter.mode == Mode::Users && greeter.users.selected > 0 {
         greeter.users.selected -= 1;
       }
 
-      if greeter.mode == Mode::Sessions
-        && greeter.sessions.selected > 0
-      {
+      if greeter.mode == Mode::Sessions && greeter.sessions.selected > 0 {
         greeter.sessions.selected -= 1;
       }
 
-      if greeter.mode == Mode::Power
-        && greeter.powers.selected > 0
-      {
+      if greeter.mode == Mode::Power && greeter.powers.selected > 0 {
         greeter.powers.selected -= 1;
       }
     },

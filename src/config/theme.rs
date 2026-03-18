@@ -9,7 +9,7 @@ use crate::{config::schema::ThemeConfig, theme::Theme};
 /// # Returns
 ///
 /// Theme with colors specified in config, defaulting unspecified elements
-#[must_use] 
+#[must_use]
 pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
   let mut theme = Theme::default();
 
@@ -68,7 +68,7 @@ pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
 /// # Returns
 ///
 /// CLI theme if specified, otherwise base theme
-#[must_use] 
+#[must_use]
 pub fn apply_cli_theme(
   mut base_theme: Theme,
   cli_theme_spec: Option<&str>,
