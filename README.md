@@ -101,10 +101,20 @@ available through `F12`.
 
 ## Install
 
-This fork is currently not packaged anywhere. A Nix flake is provided, and you
-may build from source if you are interested in using the fork. Should you wish
-to package this for your distribution, do feel free to update the readme with
-per-distribution instructions.
+This fork is currently only packaged for the ArchLinux AUR. Tuigreet is also packaged
+in-repo via nix, and you may build from source if you are interested in using
+the fork. Should you wish to package this for your distribution, please do, and
+submit a pr to update the readme with per-distribution instructions. We will be happy
+to review :)
+
+### From Arch Linux
+
+On ArchLinux, two distributions are available from the [AUR](https://aur.archlinux.org/packages?O=0&K=tuigreet-fork): `greetd-tuigreet-fork-bin` is the precompiled binary for the latest tagged release and `greetd-tuigreet-fork-git` is available for the same tagged release, but you compile it yourself.
+Those can be installed via your preferred AUR helper.
+e.g.
+```bash
+yay -S greetd-tuigreet-fork-bin
+```
 
 ### With Nix
 
@@ -119,7 +129,7 @@ example, you may create an overlay to override `pkgs.tuigreet` as follows:
       src = prev.fetchFromGitHub {
         owner = "NotAShelf";
         repo = "tuigreet";
-        tag = "0.9.2"; # update this with the tag you want to use
+        tag = "0.10.2"; # update this with the tag you want to use
         hash = ""; # update this with the appropriate hash for your tag
       };
 
