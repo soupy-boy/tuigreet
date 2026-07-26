@@ -134,7 +134,7 @@ example, you may create an overlay to override `pkgs.tuigreet` as follows:
   (final: prev: {
     tuigreet = prev.tuigreet.overrideAttrs (
       finalAttrs: prevAttrs: {
-        version = "0.11.0"; # remember to update this version!
+        version = "0.13.0"; # remember to update this version!
 
         src = final.fetchFromGitHub {
           inherit (prevAttrs.src) repo;

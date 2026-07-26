@@ -1,6 +1,80 @@
 # tuigreet Changelog
 
-## 0.12.0
+## 0.13.0
+
+### Added
+
+- Configuration is now loaded via `clap` (derive) and `figment`, replacing the
+  previous `getopts`-based parser. Config is resolved in layered priority:
+  clap defaults < system TOML < user TOML < environment variables < CLI args.
+  Higher layers override lower layers, and explicitly-set values at any layer
+  take precedence over defaults from lower layers.
+- `--system-config` and `--config` CLI options to specify system and user TOML
+  configuration file paths (default: `/etc/tuigreet/config.toml` and
+  `~/.config/tuigreet/config.toml`).
+- Individual `--theme-border`, `--theme-text`, `--theme-time`,
+  `--theme-container`, `--theme-title`, `--theme-greet`, `--theme-prompt`,
+  `--theme-input`, `--theme-action`, and `--theme-button` CLI options and
+  `[theme]` TOML section for granular theme control.
+- `--secret-mode` (`hidden`/`characters`) and `--secret-characters` CLI options
+  and `[secret]` TOML section, replacing the legacy `--asterisks` /
+  `--asterisks-char` flags.
+- `--power-use-setsid` CLI option and `[power] use_setsid` TOML key (default:
+  true) for controlling `setsid` prefix on power commands.
+- Individual `--doom-top-color`, `--doom-middle-color`, `--doom-bottom-color`,
+  `--doom-height`, `--doom-spread`, `--matrix-head-color`,
+  `--matrix-bright-color`, `--matrix-dim-color`, `--matrix-min-length`,
+  `--matrix-max-length`, `--matrix-min-speed`, `--matrix-max-speed`, and
+  `--matrix-mutate-chance` CLI options.
+- Generated man page (`tuigreet-1`) via `clap_mangen`.
+- added toml option for dumping config (only works if toml loaded properly,
+  prefer cli option). Also available as `general.dump_config` in TOML and
+  `TUIGREET_GENERAL__DUMP_CONFIG` via environment.
+- Configuration validation now produces non-fatal warnings alongside errors for
+  potentially problematic settings (e.g., all outputs disabled, excessive
+  padding, hidden widgets with enabled features).
+- Hot-reload watcher now watches both system and user config files.
+
+### Changed
+
+- **Breaking**: Configuration system replaced `getopts` with `clap` (derive) and
+  `figment`. The old `schema.rs`, `parser.rs`, and `env.rs` modules have been
+  removed and replaced by `config.rs`, `loader.rs`, `validation.rs`, and
+  `error.rs`.
+- **Breaking**: `--asterisks` and `--asterisks-char` CLI flags removed. Use
+  `--secret-mode=characters` and `--secret-characters` instead.
+- **Breaking**: `--no-xsession-wrapper` CLI flag removed. Use
+  `--xsession-wrapper ""` (empty string) to disable X11 session wrapping.
+- **Breaking**: `--theme "spec"` CLI flag removed. Use individual
+  `--theme-border`, `--theme-text`, etc. flags or the `[theme]` TOML section.
+- **Breaking**: `--doom-colors TOP,MIDDLE,BOTTOM` removed. Use
+  `--doom-top-color`, `--doom-middle-color`, `--doom-bottom-color` instead.
+- **Breaking**: `--matrix-colors HEAD,BRIGHT,DIM` removed. Use
+  `--matrix-head-color`, `--matrix-bright-color`, `--matrix-dim-color` instead.
+- **Breaking**: `--matrix-length MIN,MAX` removed. Use `--matrix-min-length`
+  and `--matrix-max-length` instead.
+- **Breaking**: `--matrix-speed MIN,MAX` removed. Use `--matrix-min-speed` and
+  `--matrix-max-speed` instead.
+- **Breaking**: `--power-no-setsid` replaced by `--power-use-setsid` (default:
+  true). The flag semantics are inverted.
+- **Breaking**: Configuration environment variables now use double underscore
+  (`__`) as the section/field separator (e.g., `TUIGREET_DISPLAY__SHOW_TIME`).
+  Single underscores in field names like `log_file` are preserved correctly.
+- **Breaking**: `container_padding` value is now used directly (no internal +1).
+  The default changed from 1 to 2 to preserve the same effective padding.
+- `Greeter` struct now holds a `Config` struct directly with `Deref`/`DerefMut`
+  accessors, replacing the previous `Option<Matches>` + separate field storage
+  pattern.
+- Theme module consolidated: `tuigreet-theme` now imports `ThemeConfig` from
+  `tuigreet-config` and provides `Theme::from_config()` directly.
+- UID range for user menu defaults to 1000-60000. Reading `/etc/login.defs` for
+  `UID_MIN`/`UID_MAX` has been removed.
+
+### Removed
+
+- `getopts` dependency for CLI argument parsing.
+- `tuigreet-config::schema`, `tuigreet-config::parser`, and
+  `tuigreet-config::env` modules.
 
 ### Added
 
