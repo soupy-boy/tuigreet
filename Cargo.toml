@@ -5,7 +5,7 @@ resolver = "3"
 [workspace.package]
 edition      = "2024"
 license      = "GPL-3.0-only"
-repository   = "https://github.com/notashelf/tuigreet"
+repository   = "https://github.com/tuigreet/tuigreet"
 rust-version = "1.95.0"
 version      = "0.11.0"
 
