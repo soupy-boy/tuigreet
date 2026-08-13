@@ -14,31 +14,6 @@ management, user selection, and power controls. The upstream project includes
 session launching from desktop files, username/session persistence, NSS-backed
 user menus, themeable UI components, and multi-language support.
 
-This fork, as per its motivation to maintain tuigreet with much-desired features
-and stability, extends the original with TOML-based configuration (supporting
-both user and system config files with hot-reload), environment variable mapping
-for all options, detailed error messages with source context for config issues,
-multi-monitor terminal sizing (sizing the TTY to match a specific connected
-display via DRM), and exposes core functionality as a library. Some issues that
-are fixed from upstream are as follows.
-
-<!-- TODO: this list is incomplete -->
-
-- [tuigreet#156](https://github.com/apognu/tuigreet/issues/156)
-- [tuigreet#172](https://github.com/apognu/tuigreet/issues/172)
-- [tuigreet#178](https://github.com/apognu/tuigreet/issues/178)
-- [tuigreet#190](https://github.com/apognu/tuigreet/issues/190)
-
-Additional, and perhaps marginally less relevant work includes includes a bump
-to the Rust edition, MSRV changes, dependency updates, a deep scrub to the
-codebase, NixOS VM-based integration tests and other bugfixes such as but not
-limited to session wrapper behavior, UID handling, padding semantics, status bar
-rendering and so on.
-
-We also port _some_ of the previously open PRs, such as:
-
-- [tuigreet#94](https://github.com/apognu/tuigreet/pull/94)
-
 ## Usage
 
 ![Screenshot of tuigreet authentication interface](https://github.com/notashelf/tuigreet/blob/master/contrib/assets/screenshot.png)
@@ -109,7 +84,7 @@ same way the existing F2/F3/F12 menus are configured.
 
 ## Installing Tuigreet
 
-[releases tab]: https://github.com/NotAShelf/tuigreet/releases/latest
+[releases tab]: https://github.com/tuigreet/tuigreet/releases/latest
 
 There are various methods of installing Tuigreet, and you're recommended to pick
 the appropriate method for your distribution or preferred package manager. We
@@ -163,7 +138,7 @@ example, you may create an overlay to override `pkgs.tuigreet` as follows:
 
         src = final.fetchFromGitHub {
           inherit (prevAttrs.src) repo;
-          owner = "NotAShelf";
+          owner = "tuigreet";
           # update this with the tag you want to use, if ≠'version'
           tag = finalAttrs.version;
           # update this with the appropriate hash for your tag
@@ -193,7 +168,7 @@ provided by the repository, or install it using something like `rustup`.
 
 ```sh
 # Clone the repository and navigate to it
-$ git clone https://github.com/NotAShelf/tuigreet && cd tuigreet
+$ git clone https://github.com/tuigreet/tuigreet && cd tuigreet
 
 # Build in release mode
 $ cargo build --release
@@ -202,7 +177,7 @@ $ cargo build --release
 # steps instead of trying to copy the binary.
 # $ mv target/release/tuigreet /usr/local/bin/tuigreet
 # You can also use cargo to build and install from Git:
-# $ cargo install --git https://github.com/notashelf/stash --locked
+# $ cargo install --git https://github.com/tuigreet/tuigreet --locked
 ```
 
 > [!NOTE]
@@ -220,7 +195,7 @@ $ chmod 0755 /var/cache/tuigreet
 
 ### Pre-built binaries
 
-[releases]: https://github.com/NotAShelf/tuigreet/releases
+[releases]: https://github.com/tuigreet/tuigreet/releases
 
 Pre-built binaries of `tuigreet` for several architectures can be found in the
 [releases] section of this repository. You may download a binary for your
@@ -615,7 +590,7 @@ Below is a screenshot of the greeter with the following theme applied:
 
 Which results in the following:
 
-![Screenshot of tuigreet](https://github.com/NotAShelf/tuigreet/blob/master/contrib/assets/screenshot-themed.png)
+![Screenshot of tuigreet](https://github.com/tuigreet/tuigreet/blob/master/contrib/assets/screenshot-themed.png)
 
 ### Visual mock-up mode
 
@@ -657,32 +632,8 @@ $ LD_PRELOAD=/path/to/libnss_wrapper.so cargo test --all-features # to run the w
 
 <!-- markdownlint-disable MD059 -->
 
-Following the original source, this project is made available under GNU General
-Public License version 3 (GPLv3). See [LICENSE](LICENSE) for more details on the
-exact conditions. An online copy is provided
-[here](https://www.gnu.org/licenses/gpl-3.0.en.html).
-
-### Attributions
-
-This repository has been forked from [tuigreet] due to the upstream inactivity,
-and the following radio silence due to the upstream inactivity, and the
-following radio silence. While I do hope that upstream comes back alive
-eventually, I have elected to maintain this fork for the time being, and I will
-_likely_ continue to do so for the foreseeable future due to my personal gripes
-with the previous state of the codebase. In short, this repository has been
-created as a fork to maintain tuigreet within my own time while incrementally
-improving the codebase, merging old PRs that have been stale for too long,
-fixing bugs and adding more features as I need them. Ultimately, I've "upgraded"
-the fork status to become almost entirely standalone with drastic refactors on
-the codebase. _If_ you are interested in using this fork, great. Let me know
-what you need, and I'll see what I can do for you. If you want to contribute,
-that's even better! Open a PR, and let's see where it takes us.
-
-A big thank you to the [original author](https://github.com/apognu) for their
-excellent efforts on tuigreet. While the upstream remains silent at the time of
-writing, it has served as a great base for this fork and ultimately the greeter
-it has evolved to be. I also want to extend my changes to any and all
-contributors who have supported tuigreet through issues and pull request on both
-repositories.
+This project is made available under GNU General Public License version 3
+(GPLv3). See [LICENSE](LICENSE) for more details on the exact conditions. An
+online copy is provided [here](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
 <!-- markdownlint-enable MD059 -->
