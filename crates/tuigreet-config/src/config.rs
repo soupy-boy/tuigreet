@@ -185,7 +185,7 @@ pub struct SessionConfig {
   pub sessions_dirs: Vec<String>,
 
   /// Directories containing X11 session files
-  #[arg(short, long = "xsessions", default_values_t = vec!["/usr/share/xsessions".to_string()])]
+  #[arg(short, long = "xsessions")]
   pub xsessions_dirs: Vec<String>,
 
   /// Wrapper command for non-X11 sessions
@@ -245,6 +245,16 @@ pub struct DisplayConfig {
       default_missing_value = "true",
       default_value_t = false)]
   pub battery: bool,
+
+  /// Deprecated: use --secret-mode instead.
+  #[arg(long, action = ArgAction::Set,
+      num_args = 0..=1, require_equals = true,
+      default_missing_value = "true")]
+  pub asterisks: Option<String>,
+
+  /// Deprecated: use --secret-characters instead.
+  #[arg(long = "asterisks-char")]
+  pub asterisks_char: Option<String>,
 
   /// Greeting text alignment
   #[arg(long = "greet-align", value_enum, default_value_t = AlignGreeting::default())]

@@ -3,7 +3,7 @@ mod tests {
   use figment::Jail;
   use tuigreet_types::DEFAULT_LOG_FILE;
 
-  use crate::loader::load_config_from;
+  use crate::{config::SecretMode, loader::load_config_from};
 
   /// No TOML, no env, no CLI args beyond program name -> pure clap defaults.
   #[test]
@@ -64,59 +64,70 @@ mod tests {
   // assert!(!config.display.show_time);
   // assert_eq!(config.layout.width, 80);
   // }
-  //
-  // #[test]
-  // fn canonical_secret_mode_wins_over_legacy_alias() {
-  // let mut config: Config = toml::from_str(
-  // r#"
-  // [display]
-  // asterisks = true
-  //
-  // [secret]
-  // mode = "hidden"
-  // "#,
-  // )
-  // .expect("configuration must parse");
-  // config.secret_mode_specified = true;
-  //
-  // normalize_legacy_asterisks(&mut config);
-  //
-  // assert_eq!(config.secret.mode, SecretMode::Hidden);
-  // }
-  //
-  // #[test]
-  // fn legacy_false_overrides_a_lower_characters_layer() {
-  // let mut resolved = Config::default();
-  // resolved.secret.mode = SecretMode::Characters;
-  //
-  // let mut legacy_layer = Config::default();
-  // legacy_layer.display.asterisks = Some(false);
-  // apply_config_layer(&mut resolved, legacy_layer);
-  //
-  // assert_eq!(resolved.secret.mode, SecretMode::Hidden);
-  // assert!(
-  // resolved
-  // .validate(false)
-  // .expect("legacy configuration is valid")
-  // .iter()
-  // .any(|warning| warning.contains("display.asterisks is deprecated"))
-  // );
-  // }
-  //
-  // #[test]
-  // fn canonical_higher_layer_overrides_legacy_alias() {
-  // let mut resolved = Config::default();
-  // resolved.display.asterisks = Some(true);
-  //
-  // let mut canonical_layer = Config::default();
-  // canonical_layer.secret.mode = SecretMode::Hidden;
-  // canonical_layer.secret_mode_specified = true;
-  // apply_config_layer(&mut resolved, canonical_layer);
-  // normalize_legacy_asterisks(&mut resolved);
-  //
-  // assert_eq!(resolved.secret.mode, SecretMode::Hidden);
-  // }
-  //
+
+  #[test]
+  fn legacy_asterisks_true_maps_to_characters() {
+    let (config, warnings) =
+      load_config_from(["tuigreet", "--no-config", "--asterisks"]).unwrap();
+
+    assert_eq!(config.secret.mode, SecretMode::Characters);
+    assert!(
+      warnings
+        .iter()
+        .any(|w| format!("{w}").contains("display.asterisks is deprecated"))
+    );
+  }
+
+  #[test]
+  fn legacy_asterisks_false_stays_hidden() {
+    let (config, warnings) = load_config_from([
+      "tuigreet",
+      "--no-config",
+      "--asterisks=false",
+    ])
+    .unwrap();
+
+    assert_eq!(config.secret.mode, SecretMode::Hidden);
+    assert!(
+      warnings
+        .iter()
+        .any(|w| format!("{w}").contains("display.asterisks is deprecated"))
+    );
+  }
+
+  #[test]
+  fn canonical_secret_mode_wins_over_legacy_asterisks() {
+    let (config, warnings) = load_config_from([
+      "tuigreet",
+      "--no-config",
+      "--asterisks",
+      "--secret-mode",
+      "hidden",
+    ])
+    .unwrap();
+
+    assert_eq!(config.secret.mode, SecretMode::Hidden);
+    assert!(
+      warnings
+        .iter()
+        .any(|w| format!("{w}").contains("display.asterisks is deprecated"))
+    );
+  }
+
+  #[test]
+  fn legacy_asterisks_char_sets_characters() {
+    let (config, warnings) =
+      load_config_from(["tuigreet", "--no-config", "--asterisks-char", "j"])
+        .unwrap();
+
+    assert_eq!(config.secret.characters, "j");
+    assert!(
+      warnings
+        .iter()
+        .any(|w| format!("{w}").contains("display.asterisks_char is deprecated"))
+    );
+  }
+
   // #[test]
   // fn test_mutual_exclusive_remember_flags() {
   // let toml_content = r"

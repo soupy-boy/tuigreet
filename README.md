@@ -64,16 +64,14 @@ entirely, in which case there is no per-frame cost.
 
 The following animation is available out of the box:
 
-- `doom` - The classic DOOM fire effect. Two parameters control the shape of the
-  flames: `--doom-height` (decay control, 1–9, default `6`) makes flames taller
-  at higher values, and `--doom-spread` (horizontal jitter, 0–4, default `2`)
-  widens them. The three color bands are set together with
-  `--doom-colors TOP,MIDDLE,BOTTOM`; each accepts `#RRGGBB`, `0xRRGGBB`, or any
-  named color.
-- `matrix` - Falling green digital rain. Stream length is set with
-  `--matrix-length MIN,MAX` (rows, default `6,18`) and fall speed with
-  `--matrix-speed MIN,MAX` (rows-per-frame, default `0.30,1.10`); the three
-  color bands are set together with `--matrix-colors HEAD,BRIGHT,DIM`.
+- `doom` - The classic DOOM fire effect. Parameters: `--doom-height` (decay
+  control, 1–9, default `6`), `--doom-spread` (horizontal jitter, 0–4,
+  default `2`), `--doom-top-color`, `--doom-middle-color`, `--doom-bottom-color`
+  (each accepts `#RRGGBB`, `0xRRGGBB`, or any named color).
+- `matrix` - Falling green digital rain. Parameters: `--matrix-min-length` and
+  `--matrix-max-length` (rows, defaults `6` and `18`), `--matrix-min-speed`
+  and `--matrix-max-speed` (rows-per-frame, defaults `0.30` and `1.10`),
+  `--matrix-head-color`, `--matrix-bright-color`, `--matrix-dim-color`.
 
 You can also switch animations on the fly without restarting the greeter by
 hitting `F4`. This opens a small menu listing every available animation plus a
@@ -90,7 +88,7 @@ There are various methods of installing Tuigreet, and you're recommended to pick
 the appropriate method for your distribution or preferred package manager. We
 provide pre-built binaries for tagged releases, which can be obtained from the
 [releases tab]. Additionally, the maintainers of this project maintain packages
-for the Arch Linux AUR and Nix via flakes. If none of those interest you, you
+for the Arch Linux package and Nix via flakes. If none of those interest you, you
 may build from source. Should you wish to package this for your distribution,
 please do, and submit a pull request to update the readme with per-distribution
 instructions. We will be happy to review :)
@@ -99,19 +97,13 @@ instructions. We will be happy to review :)
 
 [AUR]: https://aur.archlinux.org/packages?O=0&K=tuigreet-fork
 
-On ArchLinux, two distributions are available from the [AUR].
-`greetd-tuigreet-fork-bin` is the precompiled binary for the latest tagged
-release, and `greetd-tuigreet-fork-git` is available for the same tagged
-release, but you compile it yourself from the latest commit Those can be
-installed via your preferred AUR helper, e.g.:
+On ArchLinux, there is only one official package at the moment.
+`greetd-tuigreet` is the precompiled binary for the latest tagged
+release
 
 ```bash
 # Install the built binary from the AUR. This uses tuigreet's own releases.
-$ yay -S greetd-tuigreet-fork-bin
-
-# Alternatively, use the -git version to build from source. This depends on
-# the Rust toolchain.
-$ yay -S greetd-tuigreet-fork-git
+$ pacman -S greetd-tuigreet
 ```
 
 ### With Nix
@@ -262,8 +254,9 @@ max_uid = 60000
 mode = "characters"  # "hidden" or "characters"
 characters = "*"
 
-# `[display] asterisks = true|false` remains supported for compatibility but is
-# deprecated. Migrate it to `secret.mode`; `secret.mode` wins if both are set.
+# `[display] asterisks = true|false` and `asterisks_char = "chars"` remain
+# supported for compatibility but are deprecated. Migrate to `secret.mode` and
+# `secret.characters`; `secret.*` wins if both are set.
 
 [keybindings]
 command = 2     # F2
@@ -293,8 +286,10 @@ max_speed = 1.10
 mutate_chance = 0.02 # per-cell glyph shimmer probability
 
 [session]
-sessions_dirs = ["/usr/share/wayland-sessions", "/usr/share/xsessions"]
-xsessions_dirs = []
+# Both default to empty; XDG_DATA_DIRS is searched for wayland-sessions and
+# xsessions subdirectories. Uncomment to override.
+# sessions_dirs = ["/usr/share/wayland-sessions"]
+# xsessions_dirs = ["/usr/share/xsessions"]
 environments = []
 
 [power]
@@ -316,75 +311,72 @@ button = "bright-red"
 #### Environment Variables
 
 All configuration options can also be set via environment variables. The naming
-convention is `TUIGREET_<SECTION>_<KEY>` for nested options, or `TUIGREET_<KEY>`
-for top-level options:
+convention is `TUIGREET_<SECTION>__<KEY>` for nested options, or `TUIGREET_<KEY>`
+for top-level options (each nesting level requires two underscores):
 
 ```bash
 # General configuration
-export TUIGREET_DEBUG=true
-export TUIGREET_LOG_FILE="/custom/path/tuigreet.log"
+export TUIGREET_GENERAL__DEBUG=true
+export TUIGREET_GENERAL__LOG_FILE="/custom/path/tuigreet.log"
 
 # Display options
-export TUIGREET_TIME=true
-export TUIGREET_TIME_FORMAT="%Y-%m-%d %H:%M"
-export TUIGREET_GREETING="Welcome!"
-export TUIGREET_ISSUE=false
-export TUIGREET_ALIGN_GREETING=center  # left, center, right
+export TUIGREET_DISPLAY__SHOW_TIME=true
+export TUIGREET_DISPLAY__TIME_FORMAT="%Y-%m-%d %H:%M"
+export TUIGREET_DISPLAY__GREETING="Welcome!"
+export TUIGREET_DISPLAY__ISSUE=false
+export TUIGREET_DISPLAY__ALIGN_GREETING=center  # left, center, right
 
 # Layout configuration
-export TUIGREET_WIDTH=80
-export TUIGREET_WINDOW_PADDING=1
-export TUIGREET_CONTAINER_PADDING=1
-export TUIGREET_PROMPT_PADDING=1
+export TUIGREET_LAYOUT__WIDTH=80
+export TUIGREET_LAYOUT__WINDOW_PADDING=1
+export TUIGREET_LAYOUT__CONTAINER_PADDING=1
+export TUIGREET_LAYOUT__PROMPT_PADDING=1
 
 # Widget positioning
-export TUIGREET_TIME_POSITION=top      # default, top, bottom, hidden
-export TUIGREET_STATUS_POSITION=bottom # default, top, bottom, hidden
+export TUIGREET_LAYOUT__WIDGETS__TIME_POSITION=top      # default, top, bottom, hidden
+export TUIGREET_LAYOUT__WIDGETS__STATUS_POSITION=bottom # default, top, bottom, hidden
 
 # Remember options
-export TUIGREET_REMEMBER=true
-export TUIGREET_REMEMBER_SESSION=false
-export TUIGREET_REMEMBER_USER_SESSION=true
+export TUIGREET_REMEMBER__USERNAME=true
+export TUIGREET_REMEMBER__SESSION=false
+export TUIGREET_REMEMBER__USER_SESSION=true
 
 # User menu configuration
-export TUIGREET_USER_MENU=true
-export TUIGREET_USER_MENU_MIN_UID=1000
-export TUIGREET_USER_MENU_MAX_UID=60000
+export TUIGREET_USER_MENU__ENABLED=true
+export TUIGREET_USER_MENU__MIN_UID=1000
+export TUIGREET_USER_MENU__MAX_UID=60000
 
 # Secret display
-export TUIGREET_SECRET_MODE=characters  # hidden, characters
-export TUIGREET_SECRET_CHARACTERS="●"
+export TUIGREET_SECRET__MODE=characters  # hidden, characters
+export TUIGREET_SECRET__CHARACTERS="*"
 
-# Session configuration
-export TUIGREET_SESSION_COMMAND="sway"
-export TUIGREET_SESSIONS_DIRS="/usr/share/wayland-sessions:/custom/sessions"
-export TUIGREET_XSESSIONS_DIRS="/usr/share/xsessions"
-export TUIGREET_SESSION_WRAPPER="systemd-cat -t sway"
-export TUIGREET_XSESSION_WRAPPER="startx"
-export TUIGREET_ENVIRONMENTS="WAYLAND_DISPLAY:DISPLAY"
+# Session configuration (optional; XDG_DATA_DIRS is used by default)
+export TUIGREET_SESSION__COMMAND="sway"
+export TUIGREET_SESSION__SESSIONS_DIRS="/usr/share/wayland-sessions:/custom/sessions"
+export TUIGREET_SESSION__XSESSIONS_DIRS="/usr/share/xsessions"
+export TUIGREET_SESSION__SESSION_WRAPPER="systemd-cat -t sway"
+export TUIGREET_SESSION__XSESSION_WRAPPER="startx"
+export TUIGREET_SESSION__ENVIRONMENTS="WAYLAND_DISPLAY:DISPLAY"
 
 # Power options
-export TUIGREET_POWER_USE_SETSID=false
+export TUIGREET_POWER__USE_SETSID=false
 
 # Keybindings (F-key numbers)
-export TUIGREET_KB_COMMAND=2   # F2
-export TUIGREET_KB_SESSIONS=3  # F3
-export TUIGREET_KB_POWER=12    # F12
+export TUIGREET_KEYBINDINGS__COMMAND=2   # F2
+export TUIGREET_KEYBINDINGS__SESSIONS=3  # F3
+export TUIGREET_KEYBINDINGS__POWER=12    # F12
 
 # Individual theme components
-export TUIGREET_THEME_BORDER=white
-export TUIGREET_THEME_TEXT=green
-export TUIGREET_THEME_TIME=blue
-export TUIGREET_THEME_CONTAINER=black
-export TUIGREET_THEME_TITLE=cyan
-export TUIGREET_THEME_GREET=yellow
-export TUIGREET_THEME_PROMPT=magenta
-export TUIGREET_THEME_INPUT=white
-export TUIGREET_THEME_ACTION=bright-blue
-export TUIGREET_THEME_BUTTON=bright-red
-
-# Or use legacy theme format (semicolon-separated)
-export TUIGREET_THEME="border=white;text=green;time=blue;container=black"
+export TUIGREET_THEME__BORDER=white
+export TUIGREET_THEME__TEXT=green
+export TUIGREET_THEME__TIME=blue
+export TUIGREET_THEME__CONTAINER=black
+export TUIGREET_THEME__TITLE=cyan
+export TUIGREET_THEME__GREET=yellow
+export TUIGREET_THEME__PROMPT=magenta
+export TUIGREET_THEME__INPUT=white
+export TUIGREET_THEME__ACTION=bright-blue
+export TUIGREET_THEME__BUTTON=bright-red
 ```
 
 #### Hot Reload
@@ -460,11 +452,18 @@ rows = 52
 
 ### Sessions
 
-The available sessions are fetched from `desktop` files in
-`/usr/share/xsessions` and `/usr/share/wayland-sessions`. If you want to provide
-custom directories, you can set the `--sessions` arguments with a
-colon-separated list of directories for `tuigreet` to fetch session definitions
-some other place.
+By default, tuigreet searches for session `desktop` files under every directory
+in `$XDG_DATA_DIRS` (falling back to `/usr/local/share:/usr/share`), looking
+for `wayland-sessions/` and `xsessions/` subdirectories. This matches the
+XDG Base Directory Specification and works out of the box on most distributions.
+
+If you want to override this and point tuigreet at specific directories, repeat
+the `-s`/`--sessions` flag (for Wayland) or `-x`/`--xsessions` flag (for X11)
+for each directory:
+
+```sh
+tuigreet --sessions /custom/wayland-sessions --xsessions /custom/xsessions
+```
 
 #### Desktop environments
 
@@ -497,10 +496,10 @@ Exec=/path/to/my/wrapper.sh
 
 #### Common wrappers
 
-Two options allows you to automatically wrap run commands around sessions
-started from desktop files, depending on whether they come
-`/usr/share/wayland-sessions` or `/usr/share/xsessions`: `--sessions-wrapper`
-and `--xsessions-wrapper`. With this, you can prepend another command on front
+Two options allow you to automatically wrap commands around sessions
+started from desktop files, depending on whether they come from
+`/usr/share/wayland-sessions` or `/usr/share/xsessions`: `--session-wrapper`
+and `--xsession-wrapper`. With these, you can prepend another command in front
 of the sessions you run to set up the required environment to run these kinds of
 sessions.
 
@@ -533,7 +532,7 @@ command = "tuigreet --power-shutdown 'sudo systemctl poweroff'"
 > [!NOTE]
 > By default, all commands are prefixed with `setsid` to completely detach the
 > command from our TTY. If you would prefer to run the commands as is, or if
-> `setsid` does not exist on your system, you can use `--power-no-setsid`.
+> `setsid` does not exist on your system, you can use `--power-use-setsid=false`.
 
 ### User menu
 
@@ -551,15 +550,11 @@ for the minimum and maximum UIDs are selected as follows, for each value:
 
 [in the ratatui repository]: https://github.com/ratatui/ratatui/blob/main/ratatui-core/src/style/color.rs
 
-A theme specification can be given through the `--theme` argument to control
-some of the colors used to draw the UI. This specification string must have the
-following format: `component1=color;component2=color[;...]` where the component
-is one of the value listed in the table below, and the color is a valid ANSI
-color name as listed [in the ratatui repository].
-
-Mind that the specification string include semicolons, which are command
-delimiters in most shells, hence, you should enclose it in single-quotes so it
-is considered a single argument instead.
+Theme colors can be set through individual CLI flags or the `[theme]` TOML
+section to control some of the colors used to draw the UI. Each component
+listed in the table below has a corresponding `--theme-<component>` flag, and
+can also be set in a `[theme]` section in your config file. Colors accept any
+ANSI color name as listed [in the ratatui repository].
 
 Please note that we can only render colors as supported by the running terminal.
 In the case of the Linux virtual console, those colors might not look as good as
@@ -584,8 +579,16 @@ one may think. Your mileage may vary.
 
 Below is a screenshot of the greeter with the following theme applied:
 
-```plaintext
-`border=magenta;text=cyan;prompt=green;time=red;action=blue;button=yellow;container=black;input=red`:
+```toml
+[theme]
+border = "magenta"
+text = "cyan"
+prompt = "green"
+time = "red"
+action = "blue"
+button = "yellow"
+container = "black"
+input = "red"
 ```
 
 Which results in the following:

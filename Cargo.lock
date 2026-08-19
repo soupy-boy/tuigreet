@@ -2275,7 +2275,6 @@ dependencies = [
  "ansi-to-tui",
  "chrono",
  "clap",
- "clap_mangen",
  "crossterm",
  "dirs",
  "figment",
@@ -2730,6 +2729,15 @@ name = "winnow"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "clap_mangen",
+ "tuigreet-config",
+]
 
 [[package]]
 name = "yansi"

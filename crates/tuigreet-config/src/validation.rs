@@ -5,15 +5,20 @@ use std::{
 };
 
 use crate::{
+  ConfigErr,
+  ConfigOk,
   config::{Config, SecretMode, WidgetPosition},
   error::ConfigError,
 };
 
 impl Config {
   /// Validates rules on the fully-resolved config, after TOML,
-  /// env, and CLI are merged
+  /// env, and CLI are merged.
   ///
-  /// Returns non-fatal configuration warnings when validation succeeds.
+  /// Returns the validated `Config` on success (with non-fatal warnings).
+  /// On failure, returns a **sanitized** copy of the `Config` where every
+  /// field that triggered an error has been replaced with its default,
+  /// alongside the list of errors and warnings.
   ///
   /// # Errors
   ///
@@ -22,9 +27,11 @@ impl Config {
   pub fn validate(
     &self,
     validate_wrappers: bool,
-  ) -> Result<Vec<ConfigError>, (Vec<ConfigError>, Vec<ConfigError>)> {
+  ) -> Result<ConfigOk, ConfigErr> {
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
+    let defaults = Config::defaults();
+    let mut fixed = self.clone();
 
     // Check mutually exclusive options
     if self.display.issue && self.display.greeting.is_some() {
@@ -32,6 +39,7 @@ impl Config {
         "display.issue".to_string(),
         "display.greeting".to_string(),
       ));
+      fixed.display.greeting = None;
     }
 
     // Check dependencies
@@ -39,6 +47,7 @@ impl Config {
       errors.push(ConfigError::Dependency(
         "remember.user_session requires remember.username".to_string(),
       ));
+      fixed.remember.user_session = false;
     }
 
     // Check UID ranges
@@ -46,12 +55,15 @@ impl Config {
       errors.push(ConfigError::InvalidRange(
         "user_menu.min_uid must not exceed user_menu.max_uid".to_string(),
       ));
+      fixed.user_menu.min_uid = defaults.user_menu.min_uid;
+      fixed.user_menu.max_uid = defaults.user_menu.max_uid;
     }
 
     if self.layout.width == 0 {
       errors.push(ConfigError::Validation(
         "layout.width must be greater than 0".to_string(),
       ));
+      fixed.layout.width = defaults.layout.width;
     }
     for (name, padding) in [
       ("layout.window_padding", self.layout.window_padding),
@@ -62,6 +74,18 @@ impl Config {
         errors.push(ConfigError::Validation(format!(
           "{name} must not exceed 10"
         )));
+        match name {
+          "layout.window_padding" => {
+            fixed.layout.window_padding = defaults.layout.window_padding
+          },
+          "layout.container_padding" => {
+            fixed.layout.container_padding = defaults.layout.container_padding
+          },
+          "layout.prompt_padding" => {
+            fixed.layout.prompt_padding = defaults.layout.prompt_padding
+          },
+          _ => unreachable!(),
+        }
       }
     }
 
@@ -74,6 +98,10 @@ impl Config {
     ];
     if keys.iter().collect::<HashSet<_>>().len() != keys.len() {
       errors.push(ConfigError::DuplicateKeybindings);
+      fixed.keybindings.command = defaults.keybindings.command;
+      fixed.keybindings.sessions = defaults.keybindings.sessions;
+      fixed.keybindings.power = defaults.keybindings.power;
+      fixed.keybindings.background = defaults.keybindings.background;
     }
 
     // Check F-key ranges
@@ -85,6 +113,21 @@ impl Config {
     ] {
       if !(1..=12).contains(&key) {
         errors.push(ConfigError::InvalidFKey(name.to_string(), key));
+        match name {
+          "command" => {
+            fixed.keybindings.command = defaults.keybindings.command
+          },
+          "sessions" => {
+            fixed.keybindings.sessions = defaults.keybindings.sessions
+          },
+          "power" => {
+            fixed.keybindings.power = defaults.keybindings.power
+          },
+          "background" => {
+            fixed.keybindings.background = defaults.keybindings.background
+          },
+          _ => unreachable!(),
+        }
       }
     }
 
@@ -94,6 +137,7 @@ impl Config {
         .any(|item| matches!(item, chrono::format::Item::Error))
     {
       errors.push(ConfigError::InvalidTimeFormat);
+      fixed.display.time_format = None;
     }
 
     // Validate session wrapper executables if requested
@@ -102,12 +146,14 @@ impl Config {
         && let Some(error) = self.validate_wrapper_command(wrapper)
       {
         errors.push(error);
+        fixed.session.session_wrapper = None;
       }
       if !self.session.xsession_wrapper.is_empty()
         && let Some(error) =
           self.validate_wrapper_command(&self.session.xsession_wrapper)
       {
         errors.push(error);
+        fixed.session.xsession_wrapper = defaults.session.xsession_wrapper;
       }
     }
 
@@ -119,20 +165,29 @@ impl Config {
           "At most one output may be marked `primary = true`, but \
            {primary_count} are"
         )));
+        for o in &mut fixed.outputs {
+          o.primary = false;
+        }
       }
 
-      for output in &self.outputs {
+      let mut invalid_indices = Vec::new();
+      for (i, output) in self.outputs.iter().enumerate() {
         if output.connector.contains('/') || output.connector.contains("..") {
           errors.push(ConfigError::Validation(format!(
             "Output connector name '{}' must not contain path separators",
             output.connector
           )));
-        }
-        if output.connector.is_empty() {
+          invalid_indices.push(i);
+        } else if output.connector.is_empty() {
           errors.push(ConfigError::Validation(
             "Output connector name must not be empty".to_string(),
           ));
+          invalid_indices.push(i);
         }
+      }
+      // Remove invalid outputs in reverse order to preserve indices.
+      for i in invalid_indices.into_iter().rev() {
+        fixed.outputs.remove(i);
       }
 
       // Warn if [[outputs]] is configured but all are disabled
@@ -152,14 +207,20 @@ impl Config {
          characters"
           .to_string(),
       ));
+      fixed.secret.characters = defaults.secret.characters;
     }
 
-    for env in &self.session.environments {
+    let mut malformed_env_indices = Vec::new();
+    for (i, env) in self.session.environments.iter().enumerate() {
       if !env.contains('=') {
         errors.push(ConfigError::Validation(format!(
           "malformed environment variable definition for '{env}'"
         )));
+        malformed_env_indices.push(i);
       }
+    }
+    for i in malformed_env_indices.into_iter().rev() {
+      fixed.session.environments.remove(i);
     }
 
     // Validate [terminal].
@@ -171,6 +232,7 @@ impl Config {
            be provided together"
             .to_string(),
         ));
+        fixed.terminal.cols = None;
       },
       (None, Some(_)) => {
         errors.push(ConfigError::Validation(
@@ -178,16 +240,19 @@ impl Config {
            be provided together"
             .to_string(),
         ));
+        fixed.terminal.rows = None;
       },
       (Some(0), Some(_)) => {
         errors.push(ConfigError::Validation(
           "`terminal.cols` must be greater than 0".to_string(),
         ));
+        fixed.terminal.cols = None;
       },
       (Some(_), Some(0)) => {
         errors.push(ConfigError::Validation(
           "`terminal.rows` must be greater than 0".to_string(),
         ));
+        fixed.terminal.rows = None;
       },
       _ => (),
     }
@@ -196,10 +261,57 @@ impl Config {
     warnings.extend(self.check_warnings());
 
     if errors.is_empty() {
-      Ok(warnings)
+      Ok((self.clone(), warnings))
     } else {
-      Err((errors, warnings))
+      Err(Box::new((fixed, errors, warnings)))
     }
+  }
+
+  /// Normalize legacy `display.asterisks` into `secret.mode` and
+  /// `display.asterisks_char` into `secret.characters`.
+  ///
+  /// If `display.asterisks` is set:
+  /// - `true` maps to `secret.mode = Characters`
+  /// - `false` maps to `secret.mode = Hidden`
+  ///
+  /// If `display.asterisks_char` is set, it maps to `secret.characters`.
+  ///
+  /// If `secret.mode` is also explicitly set (non-default), `secret.mode`
+  /// wins. A deprecation warning is always emitted when legacy fields are
+  /// present.
+  pub fn normalize_legacy_asterisks(&mut self) -> Vec<ConfigError> {
+    let mut warnings = Vec::new();
+
+    if let Some(ref value) = self.display.asterisks {
+      warnings.push(ConfigError::Warning(
+        "display.asterisks is deprecated, use secret.mode instead".to_string(),
+      ));
+
+      // Parse: "true"/"1"/"yes" → Characters, anything else → Hidden
+      let show = matches!(value.as_str(), "true" | "1" | "yes");
+
+      // Only apply legacy mapping when secret.mode is still the default
+      // (Hidden). If secret.mode was explicitly set to something else,
+      // the explicit setting wins.
+      if self.secret.mode == SecretMode::Hidden && show {
+        self.secret.mode = SecretMode::Characters;
+      }
+    }
+
+    if let Some(ref chars) = self.display.asterisks_char {
+      warnings.push(ConfigError::Warning(
+        "display.asterisks_char is deprecated, use secret.characters instead"
+          .to_string(),
+      ));
+
+      // Only apply when secret.characters is still the default ("*").
+      // If secret.characters was explicitly set, it wins.
+      if self.secret.characters == "*" && !chars.is_empty() {
+        self.secret.characters = chars.clone();
+      }
+    }
+
+    warnings
   }
 
   /// Check for configuration warnings
@@ -303,17 +415,6 @@ impl Config {
     {
       warnings.push(ConfigError::Warning(
         "hibernate command without setsid or privilege escalation may fail"
-          .to_string(),
-      ));
-    }
-
-    // Warn about empty session directories
-    if self.session.sessions_dirs.is_empty()
-      && self.session.xsessions_dirs.is_empty()
-    {
-      warnings.push(ConfigError::Warning(
-        "No session directories configured, users may not be able to select \
-         sessions"
           .to_string(),
       ));
     }

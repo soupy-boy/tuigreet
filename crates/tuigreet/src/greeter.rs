@@ -186,7 +186,6 @@ impl Greeter {
         match tuigreet_config::loader::load_config() {
           Ok((config, warnings)) => {
             tracing::debug!("Config loaded successfully");
-            // Apply config to greeter only if validation passed
             (config, vec![], warnings)
           },
           Err(err) => {
@@ -194,6 +193,22 @@ impl Greeter {
             (config, errors, warnings)
           },
         };
+
+      greeter.logger = crate::init_logger(&greeter);
+
+      if !errors.is_empty() {
+        tracing::warn!(
+          "Configuration has errors — invalid values replaced with defaults"
+        );
+      }
+
+      for error in &errors {
+        tracing::error!("{}", error);
+      }
+      for warning in &warnings {
+        tracing::warn!("{}", warning);
+      }
+
       greeter.apply_config(config);
 
       // Handle --list-outputs: print available DRM outputs and exit
@@ -220,14 +235,6 @@ impl Greeter {
       }
 
       greeter.logger = crate::init_logger(&greeter);
-
-      // show config warnings and errors now that the logger is initialized
-      for error in errors {
-        tracing::error!("{}", error);
-      }
-      for warning in warnings {
-        tracing::warn!("{}", warning);
-      }
 
       greeter.connect().await;
     }
@@ -590,11 +597,26 @@ impl Greeter {
       },
     );
     self.session_paths.clear();
-    for dir in &config.session.sessions_dirs {
-      self.add_session_path(PathBuf::from(dir), SessionType::Wayland);
+    if config.session.sessions_dirs.is_empty() {
+      for dir in crate::info::xdg_data_dirs() {
+        self.add_session_path(
+          dir.join("wayland-sessions"),
+          SessionType::Wayland,
+        );
+      }
+    } else {
+      for dir in &config.session.sessions_dirs {
+        self.add_session_path(PathBuf::from(dir), SessionType::Wayland);
+      }
     }
-    for dir in &config.session.xsessions_dirs {
-      self.add_session_path(PathBuf::from(dir), SessionType::X11);
+    if config.session.xsessions_dirs.is_empty() {
+      for dir in crate::info::xdg_data_dirs() {
+        self.add_session_path(dir.join("xsessions"), SessionType::X11);
+      }
+    } else {
+      for dir in &config.session.xsessions_dirs {
+        self.add_session_path(PathBuf::from(dir), SessionType::X11);
+      }
     }
     // Display
     self.greeting = if config.display.issue {
@@ -629,15 +651,19 @@ impl Greeter {
         SecretDisplay::Character(config.secret.characters.clone())
       },
     };
+
+    // Assign config before animation setup so that push_frame_rate()
+    // reads the current background.fps via self.config.background.fps.
+    let bg = config.background.clone();
+    let theme = config.theme.clone();
+    self.config = config;
+
     // Animation
-    self.set_background_from_config(&config.background);
+    self.set_background_from_config(&bg);
     self.populate_backgrounds_menu();
 
     // Apply theme config
-    self.themeui = Theme::from_config(&config.theme);
-
-    // set config of greeter
-    self.config = config;
+    self.themeui = Theme::from_config(&theme);
   }
 
   pub fn reload_sessions(&mut self) {
@@ -747,12 +773,17 @@ mod test {
     greeter.apply_config(replacement);
 
     assert!(matches!(greeter.session_source, SessionSource::None));
-    assert_eq!(greeter.session_paths.len(), 2);
     assert!(
       greeter
         .session_paths
         .iter()
-        .any(|(path, _)| path == "/second")
+        .any(|(path, st)| path == "/second" && *st == SessionType::Wayland)
+    );
+    assert!(
+      !greeter
+        .session_paths
+        .iter()
+        .any(|(path, _)| path == "/first")
     );
     assert!(greeter.session.session_wrapper.is_none());
     assert!(!greeter.user_menu.enabled);

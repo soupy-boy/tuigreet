@@ -32,7 +32,7 @@ static XDG_DATA_DIRS: OnceLock<Vec<PathBuf>> = OnceLock::new();
 static DEFAULT_SESSION_PATHS: OnceLock<Vec<(PathBuf, SessionType)>> =
   OnceLock::new();
 
-fn xdg_data_dirs() -> &'static Vec<PathBuf> {
+pub fn xdg_data_dirs() -> &'static Vec<PathBuf> {
   XDG_DATA_DIRS.get_or_init(|| {
     let value = env::var("XDG_DATA_DIRS")
       .unwrap_or("/usr/local/share:/usr/share".to_string());

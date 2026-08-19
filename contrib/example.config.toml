@@ -20,10 +20,12 @@ numlock = false
 # command = "sway"
 
 # Directories containing Wayland session files
-sessions_dirs = ["/usr/share/wayland-sessions"]
+# Default: empty (XDG_DATA_DIRS is searched for wayland-sessions subdirs)
+# sessions_dirs = ["/usr/share/wayland-sessions"]
 
 # Directories containing X11 session files
-xsessions_dirs = ["/usr/share/xsessions"]
+# Default: empty (XDG_DATA_DIRS is searched for xsessions subdirs)
+# xsessions_dirs = ["/usr/share/xsessions"]
 
 # Wrapper command for non-X11 sessions
 # session_wrapper = "exec"
@@ -79,6 +81,11 @@ mode = "hidden"
 
 # Characters to use when mode is "characters"
 characters = "*"
+
+# Deprecated: use [secret] section instead.
+# [display]
+# asterisks = false
+# asterisks_char = "*"
 
 [layout]
 # Width of the main prompt container

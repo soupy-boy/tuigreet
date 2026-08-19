@@ -17,6 +17,7 @@
         fileset = fs.unions [
           (s + /contrib)
           (s + /crates)
+          (s + /xtask)
           (s + /Cargo.lock)
           (s + /Cargo.toml)
         ];
@@ -25,6 +26,14 @@
   };
 
   cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {name = "tuigreet-deps";});
+
+  xtask = craneLib.buildPackage (commonArgs // {
+    pname = "tuigreet-xtask";
+    cargoArtifacts = null;
+    cargoExtraArgs = "-p xtask";
+    # Don't install the xtask binary — it's a build tool only.
+    installPhaseCommand = "mkdir -p $out";
+  });
 in
   craneLib.buildPackage (commonArgs
     // {
@@ -39,7 +48,8 @@ in
       ];
 
       postInstall = ''
-        installManPage ${../contrib}/man/tuigreet.1
+        ${xtask}/bin/xtask man
+        installManPage contrib/man/tuigreet.1
       '';
 
       meta = {

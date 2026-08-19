@@ -17,8 +17,11 @@
   `--theme-input`, `--theme-action`, and `--theme-button` CLI options and
   `[theme]` TOML section for granular theme control.
 - `--secret-mode` (`hidden`/`characters`) and `--secret-characters` CLI options
-  and `[secret]` TOML section, replacing the legacy `--asterisks` /
-  `--asterisks-char` flags.
+  and `[secret]` TOML section for controlling secret input display.
+- `--asterisks` and `--asterisks-char` CLI options and `[display] asterisks` /
+  `asterisks_char` TOML keys re-added as deprecated aliases for `--secret-mode`
+  and `--secret-characters`. A deprecation warning is emitted when they are
+  used. `secret.*` takes priority when both are set.
 - `--power-use-setsid` CLI option and `[power] use_setsid` TOML key (default:
   true) for controlling `setsid` prefix on power commands.
 - Individual `--doom-top-color`, `--doom-middle-color`, `--doom-bottom-color`,
@@ -41,8 +44,6 @@
   `figment`. The old `schema.rs`, `parser.rs`, and `env.rs` modules have been
   removed and replaced by `config.rs`, `loader.rs`, `validation.rs`, and
   `error.rs`.
-- **Breaking**: `--asterisks` and `--asterisks-char` CLI flags removed. Use
-  `--secret-mode=characters` and `--secret-characters` instead.
 - **Breaking**: `--no-xsession-wrapper` CLI flag removed. Use
   `--xsession-wrapper ""` (empty string) to disable X11 session wrapping.
 - **Breaking**: `--theme "spec"` CLI flag removed. Use individual
@@ -57,6 +58,10 @@
   `--matrix-max-speed` instead.
 - **Breaking**: `--power-no-setsid` replaced by `--power-use-setsid` (default:
   true). The flag semantics are inverted.
+- **Breaking**: `--sessions` now takes a single directory per flag repetition
+  (e.g., `-s /one -s /two`) instead of a colon-separated list. Similarly,
+  `--xsessions` and `--env` now use repeated flags instead of delimited
+  strings.
 - **Breaking**: Configuration environment variables now use double underscore
   (`__`) as the section/field separator (e.g., `TUIGREET_DISPLAY__SHOW_TIME`).
   Single underscores in field names like `log_file` are preserved correctly.
@@ -99,6 +104,11 @@
 
 ### Fixed
 
+- **Breaking**: `sessions_dirs` and `xsessions_dirs` no longer default to
+  hardcoded paths. Both now default to empty, causing tuigreet to fall back to
+  `$XDG_DATA_DIRS` (defaulting to `/usr/local/share:/usr/share`) for session
+  discovery. This restores the behavior of pre-0.11.0 tuigreet on systems like
+  NixOS where sessions are not under `/usr/share/`.
 - Reloading configuration now replaces removed session commands, session
   directories, wrappers, and user-menu state instead of retaining stale values.
 - Reloading session directories now refreshes the session-selection menu while

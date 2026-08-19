@@ -64,6 +64,11 @@ impl Theme {
       style.time = Some((Fg, color));
     }
     if let Ok(color) =
+      Color::from_str(theme_config.text.as_deref().unwrap_or_default())
+    {
+      style.text = Some((Fg, color));
+    }
+    if let Ok(color) =
       Color::from_str(theme_config.border.as_deref().unwrap_or_default())
     {
       style.border = Some((Fg, color));

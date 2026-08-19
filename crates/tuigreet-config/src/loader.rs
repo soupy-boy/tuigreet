@@ -11,16 +11,7 @@ use figment::{
 };
 use tuigreet_types::expand_tilde;
 
-use crate::{config::Config, error::ConfigError};
-
-/// Successful config load: resolved config plus non-fatal warnings.
-pub type ConfigOk = (Config, Vec<ConfigError>);
-
-/// Partial config plus fatal errors and non-fatal warnings.
-pub type ConfigErr = Box<(Config, Vec<ConfigError>, Vec<ConfigError>)>;
-
-/// The full result type returned by `load_config*` functions.
-pub type LoadResult = Result<ConfigOk, ConfigErr>;
+use crate::{LoadResult, config::Config, error::ConfigError};
 
 /// Clears any argument whose value came from clap's `default_value` (not
 /// genuinely supplied by the user via CLI or env), leaving a sparse
@@ -139,14 +130,25 @@ where
     },
   };
 
+  // Normalize legacy display.asterisks -> secret.mode BEFORE applying
+  // explicit CLI args, so that e.g. --secret-mode overrides the legacy field.
+  let mut legacy_warnings = config.normalize_legacy_asterisks();
+
   // apply only args the user actually supplied on the CLI (final override)
   config
     .update_from_arg_matches(&matches_no_defaults)
     .expect("matches were derived from same Config type");
 
   match config.validate(false) {
-    Ok(warnings) => Ok((config, warnings)),
-    Err((errors, warnings)) => Err(Box::new((config, errors, warnings))),
+    Ok((config, mut warnings)) => {
+      warnings.append(&mut legacy_warnings);
+      Ok((config, warnings))
+    },
+    Err(err) => {
+      let (fixed, errors, mut warnings) = *err;
+      warnings.append(&mut legacy_warnings);
+      Err(Box::new((fixed, errors, warnings)))
+    },
   }
 }
 
